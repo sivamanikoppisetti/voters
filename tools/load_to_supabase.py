@@ -72,7 +72,7 @@ def read_csvs(paths):
             print(f"Warning: {dates} house numbers in {p.name} look like dates. Was it re-saved from Excel?")
         df = df[[c for c in CSV_MAP if c in df.columns]].rename(columns=CSV_MAP)
         df = df[~((df["name"] == "Name") & (df["age"] == "Age"))]   # repeated heading rows
-        print(f"{p.name}: {len(df):,} rows")
+        print(f"{p.name}: {len(df):,} rows ({(df['name'].str.strip() == '').sum():,} with a name OCR couldn't read; these are kept)")
         frames.append(df)
     return pd.concat(frames, ignore_index=True)
 

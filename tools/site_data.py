@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
+UNREADABLE = "(Name not readable)"
+
 COLS = ["serial", "epic", "name", "rt", "relative", "house", "age", "gender",
         "ac", "section", "village", "part", "mandal"]
 
@@ -29,6 +31,9 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     g = df["gender"].str.lower()
     df["g"] = np.where(g.str.startswith("f"), "F", np.where(g.str.startswith("m"), "M", "O"))
     df["booth"] = df["ac"] + "|" + df["part"].astype(str)
+    # Never drop a voter just because OCR couldn't read the name: keep them if anything identifies them
+    unreadable = (df["name"] == "") & ((df["epic"] != "") | (df["relative"] != "") | (df["house"] != ""))
+    df.loc[unreadable, "name"] = UNREADABLE
     df = df[df["name"] != ""].reset_index(drop=True)
     return df
 
