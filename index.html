@@ -97,6 +97,7 @@ button, input, select { font: inherit; color: inherit; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238A8E9B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center; }
 .filters select:disabled { opacity: .5; }
+.find-quick { display: none; }
 .clear { min-height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; cursor: pointer; font-size: 14px; white-space: nowrap; transition: background-color .15s, color .15s; }
 .clear.on { background: var(--brand); border-color: var(--brand); color: #FFFFFF; font-weight: 600; box-shadow: 0 0 0 3px var(--brand-soft); }
 .clear.on:hover { filter: brightness(1.08); }
@@ -162,6 +163,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart text { fill: var(--slate); font-size: 12px; font-family: var(--font); }
 .legend { display: flex; gap: 16px; font-size: 13px; color: var(--slate); margin-top: 8px; }
+.box-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
+.box-head h2 { margin: 0; }
+.box-head .legend { margin: 4px 0 0 auto; flex: none; }
+.bar-num { fill: #FFFFFF !important; font-size: 11px !important; font-weight: 600; pointer-events: none; font-variant-numeric: tabular-nums; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; white-space: nowrap; z-index: 3; }
 
@@ -186,6 +191,8 @@ tr.mrow > td { padding: 0 10px 14px; background: var(--brand-soft); }
 .mlist .mh { color: var(--slate); font-size: 13px; padding-top: 12px; }
 .mlist .mn { font-weight: 600; }
 .note { font-size: 13px; color: var(--slate); margin: 10px 0 0; }
+.tips { margin: 8px 0 0; font-size: 13px; color: var(--slate); max-width: 640px; line-height: 1.45; }
+.note.fuzzy { color: var(--warn); }
 .search-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; max-width: 640px; }
 .search-row .search { margin-top: 0; flex: 1; min-width: 0; }
 .search-btn { min-height: 48px; padding: 0 22px; flex: none; }
@@ -238,6 +245,9 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   .fbox .filters { border: 0; border-top: 1px solid var(--line); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
   .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 12px; }
   .clear { grid-column: 1 / -1; }
+  .find-quick { display: inline-flex; align-items: center; justify-content: center; gap: 8px; align-self: end; min-height: 42px; border: 0; border-radius: 999px;
+    background: #028136; color: #FFFFFF; font-weight: 600; font-size: 15px; cursor: pointer; box-shadow: 0 2px 8px rgba(2, 129, 54, .28); }
+  .find-quick::before { content: ""; width: 16px; height: 16px; flex: none; background: no-repeat center / 16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E"); }
   .hero { grid-template-columns: minmax(0, 1fr); }
   .hero-text { font-size: 16px; }
   .focus { grid-template-columns: minmax(0, 1fr); }
@@ -311,6 +321,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       <label><span data-t="fVillage">Village</span><select id="f_village"></select></label>
       <label><span data-t="fBooth">Booth</span><select id="f_booth"></select></label>
       <label><span data-t="fStreet">Street / section</span><select id="f_section"></select></label>
+      <button class="find-quick" id="findQuick" type="button"><span data-t="tabSearch">Find a voter</span></button>
       <button class="clear" id="clearFilters" type="button" data-t="showAll">Show everything</button>
     </div>
     </details>
@@ -339,31 +350,27 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
         <div class="stat"><div class="stat-label" data-t="statOld">Seniors, 60 and over</div><div class="stat-num" id="s_old"></div><div class="stat-sub" id="s_old_sub"></div></div>
       </div>
       <div class="box" id="topVillages">
-        <h2 data-t="villTitle">Villages with the most voters</h2>
+        <div class="box-head"><h2 data-t="villTitle">Villages with the most voters</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
         <p data-t="villSub">Ranked by number of voters. Tap a village to see only that village.</p>
         <div class="chart" id="c_villages"></div>
-        <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
         <p class="note" id="villagesNote"></p>
       </div>
       <div class="box" id="topSurnames">
-        <h2 data-t="snTitle">Surnames with the most voters</h2>
+        <div class="box-head"><h2 data-t="snTitle">Surnames with the most voters</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
         <p data-t="snSub">Family names shared by a voter and their father or husband. Tap a surname to find those voters.</p>
         <div class="chart" id="c_surnames"></div>
-        <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
         <p class="note" id="surnamesNote"></p>
       </div>
       <div class="two">
         <div class="box">
-          <h2 data-t="ageTitle">Age and gender</h2>
+          <div class="box-head"><h2 data-t="ageTitle">Age and gender</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
           <p data-t="ageSub">Men on the left, women on the right.</p>
           <div class="chart" id="c_pyramid"></div>
-          <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
         </div>
         <div class="box">
-          <h2 data-t="streetTitle">Largest streets</h2>
+          <div class="box-head"><h2 data-t="streetTitle">Largest streets</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
           <p data-t="streetSub">The 10 sections of the roll with the most voters.</p>
           <div class="chart" id="c_streets"></div>
-          <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
         </div>
       </div>
     </section>
@@ -466,9 +473,10 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
         <h2 data-t="tabSearch">Find a voter</h2>
         <p data-t="searchSub">Search by name, relative's name, EPIC number or house number, inside the area picked above.</p>
         <form class="search-row" id="searchForm" role="search">
-          <input class="search" id="q" type="search" placeholder="Try a name, UDP0651778 or 12-342" data-tp="searchPh" aria-label="Search voters" autocomplete="off" enterkeyhint="search">
+          <input class="search" id="q" type="search" placeholder="Name, father's name, EPIC or house number" data-tp="searchPh" aria-label="Search voters" autocomplete="off" enterkeyhint="search">
           <button class="btn search-btn" type="submit" data-t="searchBtn">Search</button>
         </form>
+        <p class="tips" data-t="searchTips">Any order works: surname first or last, with or without spaces, small spelling differences, Telugu letters, a father's or husband's name, or an age (durga 35). Also EPIC (UDP0651778) or house number (12-342).</p>
         <p class="note" id="searchNote"></p>
         <div class="table-wrap"><table id="t_search">
           <thead><tr>
@@ -530,7 +538,10 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       streetsTitle: 'Streets', streetsSub: 'Each section of the roll, usually a street or colony. Tap one to see only that street.',
       homesTitle: 'Largest households', homesSub: 'House numbers with the most voters. One visit reaches all of them.',
       searchSub: "Search by name, relative's name, EPIC number or house number, inside the area picked above.",
-      searchPh: 'Try a name, UDP0651778 or 12-342',
+      searchPh: "Name, father's name, EPIC or house number",
+      searchTips: "Any order works: surname first or last, with or without spaces, small spelling differences, Telugu letters, a father's or husband's name, or an age (durga 35). Also EPIC (UDP0651778) or house number (12-342).",
+      noMatch: "No voter found. Try only the surname, the father's or husband's name, or the EPIC number.",
+      fuzzyNote: (n) => `No exact match. Showing ${n} voters with similar names.`,
       thBooth: 'Booth', thVillage: 'Village', thConst: 'Constituency', thVoters: 'Voters', thHouseholds: 'Households', thRatio: 'Women per 1,000 men',
       th1829: '18 to 29', thStreet: 'Street / section', thHouses: 'Houses', thHouseNo: 'House no.', thMembers: 'Members', thHouse: 'House',
       prev: 'Previous', next: 'Next',
@@ -610,7 +621,10 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       streetsTitle: 'వీధులు', streetsSub: 'జాబితాలోని ప్రతి విభాగం, సాధారణంగా ఒక వీధి లేదా కాలనీ. ఆ వీధి మాత్రమే చూడటానికి నొక్కండి.',
       homesTitle: 'పెద్ద కుటుంబాలు', homesSub: 'అత్యధిక ఓటర్లు ఉన్న ఇంటి నంబర్లు. ఒక్కసారి వెళ్తే అందరినీ కలవవచ్చు.',
       searchSub: 'పై ఎంచుకున్న ప్రాంతంలో పేరు, బంధువు పేరు, EPIC నంబరు లేదా ఇంటి నంబరుతో వెతకండి.',
-      searchPh: 'పేరు, UDP0651778 లేదా 12-342',
+      searchPh: 'పేరు, తండ్రి పేరు, EPIC లేదా ఇంటి నంబరు',
+      searchTips: 'ఏ వరుసలోనైనా టైప్ చేయవచ్చు: ఇంటి పేరు ముందు లేదా వెనుక, ఖాళీతో లేదా లేకుండా, చిన్న అక్షర తేడాలు, తెలుగు అక్షరాలు, తండ్రి లేదా భర్త పేరు, లేదా వయస్సు (durga 35). EPIC (UDP0651778) లేదా ఇంటి నంబరు (12-342) కూడా.',
+      noMatch: 'ఓటరు కనబడలేదు. ఇంటి పేరు మాత్రమే, తండ్రి లేదా భర్త పేరు, లేదా EPIC నంబరు ప్రయత్నించండి.',
+      fuzzyNote: (n) => `ఖచ్చితమైన పేరు దొరకలేదు. దగ్గరి పేర్లు ఉన్న ${n} మంది ఓటర్లను చూపిస్తున్నాం.`,
       thBooth: 'బూత్', thVillage: 'గ్రామం', thConst: 'నియోజకవర్గం', thVoters: 'ఓటర్లు', thHouseholds: 'కుటుంబాలు', thRatio: '1,000 పురుషులకు మహిళలు',
       th1829: '18–29', thStreet: 'వీధి / విభాగం', thHouses: 'ఇళ్లు', thHouseNo: 'ఇంటి నం.', thMembers: 'సభ్యులు', thHouse: 'ఇల్లు',
       prev: 'వెనుకకు', next: 'తరువాత',
@@ -692,6 +706,32 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   const SB_KEY = String(window.SUPABASE_KEY || '').trim();
   // Calls one of the database functions (search_voters, house_members). The key is public by design;
   // the table itself is locked, so only these functions can be used.
+  // Telugu typed in the search box is turned into English letters, because names on the roll are in English
+  const TE_V = { 'అ': 'a', 'ఆ': 'aa', 'ఇ': 'i', 'ఈ': 'ee', 'ఉ': 'u', 'ఊ': 'oo', 'ఋ': 'ru', 'ఎ': 'e', 'ఏ': 'e', 'ఐ': 'ai', 'ఒ': 'o', 'ఓ': 'o', 'ఔ': 'au' };
+  const TE_M = { 'ా': 'aa', 'ి': 'i', 'ీ': 'ee', 'ు': 'u', 'ూ': 'oo', 'ృ': 'ru', 'ె': 'e', 'ే': 'e', 'ై': 'ai', 'ొ': 'o', 'ో': 'o', 'ౌ': 'au' };
+  const TE_C = { 'క': 'k', 'ఖ': 'kh', 'గ': 'g', 'ఘ': 'gh', 'ఙ': 'n', 'చ': 'ch', 'ఛ': 'chh', 'జ': 'j', 'ఝ': 'jh', 'ఞ': 'n',
+    'ట': 't', 'ఠ': 'th', 'డ': 'd', 'ఢ': 'dh', 'ణ': 'n', 'త': 't', 'థ': 'th', 'ద': 'd', 'ధ': 'dh', 'న': 'n',
+    'ప': 'p', 'ఫ': 'ph', 'బ': 'b', 'భ': 'bh', 'మ': 'm', 'య': 'y', 'ర': 'r', 'ఱ': 'r', 'ల': 'l', 'ళ': 'l', 'వ': 'v',
+    'శ': 's', 'ష': 'sh', 'స': 's', 'హ': 'h' };
+  function toLatin(text) {
+    if (!/[\u0C00-\u0C7F]/.test(text)) return text;
+    let out = '';
+    const ch = [...text];
+    for (let i = 0; i < ch.length; i++) {
+      const c = ch[i], next = ch[i + 1];
+      if (TE_C[c]) {
+        out += TE_C[c];
+        if (next === '్') { i++; continue; }                 // virama: no vowel
+        if (TE_M[next]) { out += TE_M[next]; i++; continue; } // vowel sign
+        out += 'a';                                          // inherent vowel
+      } else if (TE_V[c]) out += TE_V[c];
+      else if (c === 'ం') out += 'n';
+      else if (c === 'ః') out += 'h';
+      else if (TE_M[c] || c === '్') continue;
+      else out += c;
+    }
+    return out.replace(/a+vu\b/g, 'ao');   // రావు is written Rao on the roll
+  }
   async function rpc(fn, body) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
     if (SB_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SB_KEY;   // older "anon" keys
@@ -788,6 +828,12 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   $('#f_village').addEventListener('change', (e) => setF({ village: pickVal(e.target.value), booth: '', section: '' }));
   $('#f_booth').addEventListener('change', (e) => setF({ booth: pickVal(e.target.value), section: '' }));
   $('#f_section').addEventListener('change', (e) => setF({ section: pickVal(e.target.value) }));
+  $('#findQuick').addEventListener('click', () => {
+    showTab('search');
+    const top = $('.tabs').getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
+    setTimeout(() => $('#q').focus({ preventScroll: true }), 350);
+  });
   $('#clearFilters').addEventListener('click', () => {
     setF({ ac: '', mandal: '', village: '', booth: '', section: '' });
     showTab('overview');
@@ -1011,8 +1057,17 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     g.append('rect').attr('x', half + mid).attr('width', (d) => x(d.f)).attr('height', y.bandwidth()).attr('rx', 3).style('fill', 'var(--women)')
       .on('mousemove', (e, d) => tip.show(e, say(d))).on('mouseleave', () => tip.hide());
     g.append('text').attr('x', half + mid / 2).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'middle').text((d) => d.label);
-    g.append('text').attr('x', (d) => half - x(d.m) - 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((d) => (d.m ? fmt(d.m) : ''));
-    g.append('text').attr('x', (d) => half + mid + x(d.f) + 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((d) => (d.f ? fmt(d.f) : ''));
+    const fits = (v) => x(v) >= String(fmt(v)).length * 6.6 + 10;
+    g.append('text').attr('x', (d) => (fits(d.m) ? half - x(d.m) / 2 : half - x(d.m) - 5)).attr('y', y.bandwidth() / 2).attr('dy', '0.35em')
+      .attr('text-anchor', (d) => (fits(d.m) ? 'middle' : 'end')).attr('class', (d) => (fits(d.m) ? 'bar-num' : null)).text((d) => (d.m ? fmt(d.m) : ''));
+    g.append('text').attr('x', (d) => (fits(d.f) ? half + mid + x(d.f) / 2 : half + mid + x(d.f) + 5)).attr('y', y.bandwidth() / 2).attr('dy', '0.35em')
+      .attr('text-anchor', (d) => (fits(d.f) ? 'middle' : 'start')).attr('class', (d) => (fits(d.f) ? 'bar-num' : null)).text((d) => (d.f ? fmt(d.f) : ''));
+  }
+  // writes a number inside a bar segment when it fits
+  function barNums(g, xStart, width, y, h, value) {
+    g.append('text').attr('class', 'bar-num').attr('text-anchor', 'middle').attr('dy', '0.35em')
+      .attr('x', (d) => xStart(d) + width(d) / 2).attr('y', y + h / 2)
+      .text((d) => { const v = value(d); return v && width(d) >= String(fmt(v)).length * 6.6 + 10 ? fmt(v) : ''; });
   }
   function drawStreets(rows) {
     const el = $('#c_streets'); el.querySelector('svg')?.remove();
@@ -1031,6 +1086,8 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
     g.append('rect').attr('x', (r) => x(r.men)).attr('y', 19).attr('height', 17).attr('width', (r) => x(r.women)).attr('rx', 3).style('fill', 'var(--women)')
       .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    barNums(g, () => 0, (r) => x(r.men), 19, 17, (r) => r.men);
+    barNums(g, (r) => x(r.men), (r) => x(r.women), 19, 17, (r) => r.women);
     g.append('text').attr('x', (r) => x(r.voters) + 6).attr('y', 32).text((r) => fmt(r.voters));
   }
 
@@ -1070,6 +1127,8 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
     g.append('rect').attr('x', (r) => x(r.men)).attr('y', 20).attr('height', 16).attr('width', (r) => x(r.n - r.men)).attr('rx', 3).style('fill', 'var(--women)')
       .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    barNums(g, () => 0, (r) => x(r.men), 20, 16, (r) => r.men);
+    barNums(g, (r) => x(r.men), (r) => x(r.n - r.men), 20, 16, (r) => r.n - r.men);
     g.append('text').attr('x', (r) => x(r.n) + 6).attr('y', 32).style('font-variant-numeric', 'tabular-nums').text((r) => fmt(r.n));
   }
   function drawVillages(bs) {
@@ -1106,6 +1165,8 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       .on('mousemove', (e, v) => tip.show(e, say(v))).on('mouseleave', () => tip.hide());
     g.append('rect').attr('x', (v) => x(v.men)).attr('y', 20).attr('height', 18).attr('width', (v) => x(v.women)).attr('rx', 3).style('fill', 'var(--women)')
       .on('mousemove', (e, v) => tip.show(e, say(v))).on('mouseleave', () => tip.hide());
+    barNums(g, () => 0, (v) => x(v.men), 20, 18, (v) => v.men);
+    barNums(g, (v) => x(v.men), (v) => x(v.women), 20, 18, (v) => v.women);
     g.append('text').attr('x', (v) => x(v.voters) + 6).attr('y', 34).style('font-variant-numeric', 'tabular-nums')
       .text((v) => `${fmt(v.voters)}  (${pct(v.voters / total)})`);
   }
@@ -1275,18 +1336,22 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       const btn = $('#searchForm button'); btn.disabled = true;
       let d;
       try {
-        d = await rpc('search_voters', { q: query, p_ac: F.ac, p_mandal: F.mandal, p_village: F.village, p_booth: F.booth, p_section: F.section });
+        d = await rpc('search_voters', { q: toLatin(query), p_ac: F.ac, p_mandal: F.mandal, p_village: F.village, p_booth: F.booth, p_section: F.section });
       } catch (e) {
         if (seq === searchSeq) { $('#searchNote').textContent = e.asleep ? T('asleep') : T('searchFail'); btn.disabled = false; }
         return;
       }
       btn.disabled = false;
       if (seq !== searchSeq) return;   // a newer search has started
-      searchState = { key, total: d.total, rows: d.rows };
+      searchState = { key, total: d.total, rows: d.rows, mode: d.mode };
       pageOf.t_search = 0;
     }
-    const { total, rows } = searchState;
-    $('#searchNote').textContent = rows.length < total ? T('first200', fmt(rows.length), fmt(total)) : T('found', fmt(total));
+    const { total, rows, mode } = searchState;
+    const note = $('#searchNote');
+    note.classList.toggle('fuzzy', mode === 'fuzzy' && total > 0);
+    if (!total) note.textContent = T('noMatch');
+    else if (mode === 'fuzzy') note.textContent = T('fuzzyNote', fmt(Math.min(total, rows.length)));
+    else note.textContent = rows.length < total ? T('first200', fmt(rows.length), fmt(total)) : T('found', fmt(total));
     tb.replaceChildren();
     for (const v of paginate('t_search', rows, 'nounVoters')) {
       const b = boothById.get(v.booth);
