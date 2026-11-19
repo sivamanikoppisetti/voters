@@ -91,7 +91,7 @@ revoke all on public.voters from anon, authenticated;
 revoke all on sequence public.voters_id_seq from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- search_voters: at most 200 matches, at least 3 characters. Understands:
+-- search_voters: at most 100 matches (total counted up to 1,000+), at least 3 characters. Understands:
 --   EPIC (any case) · house numbers (12-342, 12-311/1) · names in any word order,
 --   joined or split, spelling variants, name + father's/husband's name together,
 --   name + age ("durga 35" = aged 34-36) · and similar names when nothing matches exactly.
@@ -119,6 +119,8 @@ declare
   ord     text;
   result  json;
   i       int;
+  tiers   text[];   -- best matches first: each tier stops after 100 voters (fast even for common names)
+  tier_sql text := '';
 begin
   if length(raw) < 3 then
     return json_build_object('total', 0, 'rows', '[]'::json, 'tooShort', true);
@@ -134,12 +136,12 @@ begin
     -- EPIC number
     mode := 'epic';
     wh := format('v.epic = %L', upper(regexp_replace(raw, '\s', '', 'g')));
-    score := '3';
+    tiers := array['true'];
   elsif raw ~ '^[0-9]' or (raw ~ '[0-9]' and raw ~ '[-/]') then
     -- house number
     mode := 'house';
     wh := format('lower(v.house) like %L escape ''\''', '%' || replace(replace(replace(lower(raw), '\', '\\'), '%', '\%'), '_', '\_') || '%');
-    score := format('case when lower(v.house) = %L then 3 else 1 end', lower(raw));
+    tiers := array[format('lower(v.house) = %L', lower(raw)), format('lower(v.house) <> %L', lower(raw))];
   else
     -- name(s), in any order, plus an optional age
     mode := 'name';
@@ -159,20 +161,28 @@ begin
     if ages is not null then
       wh := wh || format(' and v.age between %s and %s', ages[1] - 1, ages[1] + 1);
     end if;
-    score := format('case when replace(v.fold_name, '' '', '''') = %L then 3 '
-                 || 'when split_part(v.fold_all, ''|'', 1) like all (%L::text[]) then 2 else 1 end',
-                    replace(qf, ' ', ''), pats);
+    -- 1: the whole name matches · 2: every word is in the voter's own name · 3: the rest (e.g. relative's name)
+    tiers := array[
+      format('v.fold_all like %L', replace(qf, ' ', '') || '|%'),
+      format('v.fold_all not like %L and split_part(v.fold_all, ''|'', 1) like all (%L::text[])', replace(qf, ' ', '') || '|%', pats),
+      format('not (split_part(v.fold_all, ''|'', 1) like all (%L::text[]))', pats)];
   end if;
 
+  -- total is counted only up to 1,001 (shown as "1,000+"); at most 100 voters are returned, best tier first.
+  -- Each tier stops as soon as it has 100 voters, so even very common names stay fast.
+  for i in 1 .. array_length(tiers, 1) loop
+    tier_sql := tier_sql || case when i > 1 then ' union all ' else '' end
+      || format('(select v.*, %s as pri from voters v where %s and %s %s limit 100)', i, wh, tiers[i], flt);
+  end loop;
   execute format($q$
-    with hits as (select v.*, (%s)::float as score from voters v where %s %s),
-    firsts as (select * from hits order by score desc, ac, part, %s limit 200)
-    select json_build_object('mode', %L, 'total', (select count(*) from hits),
+    select json_build_object('mode', %L,
+      'total', (select count(*) from (select 1 from voters v where %s %s limit 1001) c),
       'rows', coalesce((select json_agg(j) from (
         select json_build_object('epic', epic, 'name', name, 'rt', relation_type, 'relative', relative_name,
           'house', house, 'age', age, 'g', gender, 'booth', booth, 'section', section, 'serial', serial_no) as j
-        from firsts order by score desc, ac, part, %s) t), '[]'::json))
-  $q$, score, wh, flt, ord, mode, ord) into result;
+        from (%s) x
+        order by pri, ac, part, %s limit 100) t), '[]'::json))
+  $q$, mode, wh, flt, tier_sql, ord) into result;
 
   -- nothing found by name: show similar names (typos, unusual spellings).
   -- Every typed word must closely match a word in the voter's or relative's name.
@@ -191,14 +201,14 @@ begin
       wh := wh || format(' and v.age between %s and %s', ages[1] - 1, ages[1] + 1);
     end if;
     execute format($q$
-      with hits as (select v.*, (%s)::float as score from voters v where %s %s),
-      firsts as (select * from hits order by score desc, ac, part, %s limit 200)
-      select json_build_object('mode', 'fuzzy', 'total', (select count(*) from hits),
+      select json_build_object('mode', 'fuzzy',
+        'total', (select count(*) from (select 1 from voters v where %s %s limit 1001) c),
         'rows', coalesce((select json_agg(j) from (
           select json_build_object('epic', epic, 'name', name, 'rt', relation_type, 'relative', relative_name,
-            'house', house, 'age', age, 'g', gender, 'booth', booth, 'section', section, 'serial', serial_no) as j
-          from firsts order by score desc, ac, part, %s) t), '[]'::json))
-    $q$, score, wh, flt, ord, ord) into result;
+          'house', house, 'age', age, 'g', gender, 'booth', booth, 'section', section, 'serial', serial_no) as j
+          from voters v where %s %s
+          order by (%s)::float desc, ac, part, %s limit 100) t), '[]'::json))
+    $q$, wh, flt, wh, flt, score, ord) into result;
   end if;
   return result;
 end;
