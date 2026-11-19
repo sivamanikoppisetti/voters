@@ -8,6 +8,8 @@ Usage (from the project folder):
       add a constituency (keeps what is already there)
   python tools\\load_to_supabase.py C:\\rolls\\all_electoral_rolls.csv --replace-constituency
       re-load one constituency (deletes only its old rows first)
+  python tools\\load_to_supabase.py C:\\rolls\\part245.csv --add-parts
+      add booths (parts) that are missing from a constituency that is already loaded
   python tools\\load_to_supabase.py --refresh-only
       after editing rows in Supabase's Table Editor: just rebuild data.json
 
@@ -123,6 +125,8 @@ def main():
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--replace", action="store_true", help="delete all voters first")
     mode.add_argument("--replace-constituency", action="store_true", help="delete only the constituencies in these CSVs first")
+    mode.add_argument("--add-parts", action="store_true",
+                      help="add only booths (parts) not already in the database; refuses parts that are already there")
     mode.add_argument("--refresh-only", action="store_true", help="don't load anything; just rebuild data.json")
     ap.add_argument("--out", default=str(ROOT / "data.json"), help="where to write data.json")
     args = ap.parse_args()
@@ -135,7 +139,17 @@ def main():
         if not args.refresh_only:
             d = prepare(read_csvs(args.csv))
             with conn.cursor() as cur:
-                if not (args.replace or args.replace_constituency):
+                if args.add_parts:
+                    cur.execute("SELECT DISTINCT ac || '|' || part FROM public.voters WHERE ac = ANY(%s)", (sorted(d["ac"].unique()),))
+                    have = {r[0] for r in cur.fetchall()}
+                    new_parts = sorted(set(d["booth"]) - have, key=lambda b: (b.split("|")[0], int(b.split("|")[1])))
+                    dup_parts = sorted(set(d["booth"]) & have, key=lambda b: (b.split("|")[0], int(b.split("|")[1])))
+                    if dup_parts:
+                        sys.exit("These parts are already in the database, so nothing was loaded: "
+                                 + ", ".join(b.replace("|", " part ") for b in dup_parts)
+                                 + ". Remove them from the CSV, or use --replace-constituency.")
+                    print("Adding new parts: " + ", ".join(b.replace("|", " part ") for b in new_parts))
+                elif not (args.replace or args.replace_constituency):
                     cur.execute("SELECT DISTINCT ac FROM public.voters WHERE ac = ANY(%s)", (sorted(d["ac"].unique()),))
                     already = [r[0] for r in cur.fetchall()]
                     if already:
