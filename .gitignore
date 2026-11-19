@@ -1,0 +1,13 @@
+# database password and local settings: never commit
+tools/.env
+.env
+
+# voter files stay on your laptop
+*.csv
+*.xlsx
+*.pdf
+
+# Python
+.venv/
+__pycache__/
+*.pyc
