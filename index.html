@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en-IN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voter Insights | KoLogs</title>
+<link rel="icon" href="kologs-logo.png">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root, :root[data-theme] {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --paper: #F7F0E1;
+  --surface: #FFFDF8;
+  --ink: #121212;
+  --slate: #66615A;
+  --line: #E6DCC8;
+  --band: #121212;
+  --brand: #028136;
+  --brand-soft: #E5F2EA;
+  --men: #1F4E79;
+  --women: #E0606E;
+  --warn: #9A5B00;
+  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --font: "Mukta", "Noto Sans Telugu", "Noto Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+/* One look everywhere: cream, even when the device or viewer is in dark mode */
+html, body { background-color: #F7F0E1; }
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 60vh; text-align: center; color: var(--slate); }
+.spinner { width: 38px; height: 38px; border-radius: 50%; border: 4px solid var(--line); border-top-color: var(--brand); animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 32px) 48px; }
+.muted { color: var(--slate); }
+.small { font-size: 14px; }
+.num { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }
+
+/* ---------- top bar ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 20px 0 16px; margin: 0 0 16px; background: transparent; color: var(--ink); border-bottom: 1px solid var(--line); }
+.top .file-info { color: var(--slate); }
+.top .link-btn { color: var(--brand); }
+.top .lang { background: var(--surface); border-color: var(--line); }
+.top .lang button { color: var(--slate); }
+.top .lang button[aria-pressed="true"] { background: #028136; color: #FFFFFF; }
+.top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.lang button { border: 0; background: none; padding: 4px 14px; min-height: 36px; font-size: 14px; cursor: pointer; color: var(--slate); }
+.lang button[aria-pressed="true"] { background: var(--brand); color: var(--surface); font-weight: 600; }
+:lang(te) body { line-height: 1.6; }
+.brand-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo { display: block; height: 30px; width: auto; }
+.logo-light { display: block !important; }
+.logo-dark { display: none !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-light { display: none; } :root:not([data-theme="light"]) .logo-dark { display: block; } }
+:root[data-theme="dark"] .logo-light { display: none; } :root[data-theme="dark"] .logo-dark { display: block; }
+.brand { font-weight: 600; font-size: 18px; letter-spacing: -0.01em; margin: 0; padding-left: 12px; border-left: 2px solid var(--line); line-height: 1.2; color: var(--ink); }
+@media (max-width: 640px) { .logo { height: 22px; } .brand { font-size: 15px; padding-left: 10px; } .top { gap: 10px 12px; padding: 14px 0 12px; margin-top: 0; } .top-right { display: contents; } .lang { order: 1; } .lang button { padding: 2px 10px; min-height: 34px; } .file-info { order: 2; width: 100%; } }
+.file-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; color: var(--slate); }
+.link-btn { background: none; border: 0; padding: 6px 2px; color: var(--brand); font-weight: 600; cursor: pointer; font-size: 14px; }
+.link-btn:hover { text-decoration: underline; }
+
+/* ---------- empty state ---------- */
+.intro { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; padding: clamp(20px, 6vw, 72px) 0; }
+.intro h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.04; letter-spacing: -0.02em; margin: 0 0 16px; font-weight: 700; max-width: 14ch; }
+.intro p { max-width: 46ch; margin: 0 0 12px; color: var(--slate); font-size: 18px; }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: clamp(24px, 4vw, 40px); text-align: center; transition: border-color .15s, background-color .15s; }
+.drop.over { border-color: var(--brand); background: var(--brand-soft); }
+.drop h2 { margin: 0 0 6px; font-size: 22px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--brand); color: var(--surface); font-weight: 600; font-size: 16px; cursor: pointer; }
+
+.drop .btn { margin: 16px 0 10px; }
+.formats { font-size: 14px; color: var(--slate); }
+.progress { margin-top: 18px; text-align: left; }
+.bar-track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--brand); transition: width .2s; }
+.error { margin-top: 14px; color: var(--warn); font-size: 15px; text-align: left; }
+.cols { margin-top: 18px; font-size: 13px; color: var(--slate); text-align: left; }
+.cols summary { cursor: pointer; }
+
+/* ---------- filters ---------- */
+.filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px 12px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--slate); min-width: 0; }
+.filters select { box-sizing: border-box; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: var(--radius-sm); background-color: var(--paper); padding: 0 30px 0 10px; font-size: 15px; text-overflow: ellipsis; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238A8E9B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; }
+.filters select:disabled { opacity: .5; }
+.clear { min-height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; cursor: pointer; font-size: 14px; white-space: nowrap; transition: background-color .15s, color .15s; }
+.clear.on { background: var(--brand); border-color: var(--brand); color: #FFFFFF; font-weight: 600; box-shadow: 0 0 0 3px var(--brand-soft); }
+.clear.on:hover { filter: brightness(1.08); }
+.filters select.set { border-color: var(--brand); background-color: var(--brand-soft); font-weight: 600; }
+.fsum-n { display: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--brand); color: #FFFFFF; font-size: 12px; font-weight: 700; align-items: center; justify-content: center; }
+.fsum-n.on { display: inline-flex; }
+
+.fbox > .fsum { display: none; }
+/* ---------- tabs ---------- */
+.tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; background: var(--paper); border-bottom: 1px solid var(--line); margin-top: 14px; padding-top: env(safe-area-inset-top, 0px); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 14px 9px; font-size: 16px; color: var(--slate); white-space: nowrap; cursor: pointer; min-height: 48px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brand); font-weight: 600; }
+.tabs { align-items: center; }
+.tab[data-tab="search"] { margin: 5px 6px 5px auto; align-self: center; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: #028136; color: #FFFFFF; font-weight: 600; box-shadow: 0 2px 8px rgba(2, 129, 54, .28); }
+.tab[data-tab="search"]::before { content: ""; width: 16px; height: 16px; flex: none; background: no-repeat center / 16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E"); }
+.tab[data-tab="search"]:hover { background: #026B2D; }
+.tab[data-tab="search"][aria-selected="true"] { background: #026B2D; color: #FFFFFF; box-shadow: 0 0 0 3px var(--brand-soft); }
+@media (max-width: 640px) {
+  .tab[data-tab="search"] { order: -1; margin: 5px 6px 5px 2px; padding: 0 14px; min-height: 38px; font-size: 15px; }
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+
+/* ---------- panels ---------- */
+.panel { padding-top: 22px; display: flex; flex-direction: column; gap: 18px; }
+.scope { font-size: 14px; color: var(--slate); margin: 0; overflow-wrap: anywhere; }
+.hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 28px; align-items: end; }
+.hero-num { font-size: clamp(52px, 10vw, 96px); font-weight: 700; line-height: .9; letter-spacing: -0.03em; color: var(--brand); font-variant-numeric: tabular-nums; }
+.hero-num + .hero-text { padding-bottom: 6px; }
+.hero-text { font-size: 18px; max-width: 52ch; margin: 0; }
+.hero-text b { font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; min-width: 0; }
+.stat-label { font-size: 14px; color: var(--slate); }
+.stat-num { font-size: 30px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.stat-sub { font-size: 13px; color: var(--slate); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px; min-width: 0; }
+.box h2 { font-size: 19px; margin: 0; font-weight: 600; }
+.box > p { margin: 2px 0 0; font-size: 14px; color: var(--slate); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; margin-top: 14px; }
+.focus-item { border-left: 3px solid var(--brand); padding: 2px 0 2px 12px; min-width: 0; overflow-wrap: anywhere; }
+.focus-item .k { font-size: 13px; color: var(--slate); }
+.focus-item .v { font-weight: 600; }
+
+/* ---------- charts ---------- */
+.chart { position: relative; margin-top: 12px; min-height: 120px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--slate); font-size: 12px; font-family: var(--font); }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--slate); margin-top: 8px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; white-space: nowrap; z-index: 3; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; margin-top: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { text-align: left; color: var(--slate); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th[data-sort] { cursor: pointer; user-select: none; }
+th[aria-sort="ascending"]::after { content: " ↑"; color: var(--brand); }
+th[aria-sort="descending"]::after { content: " ↓"; color: var(--brand); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.go { cursor: pointer; }
+tr.go:hover td { background: var(--brand-soft); }
+.mini { height: 4px; border-radius: 2px; background: var(--brand); margin: 4px 0 0 auto; opacity: .7; }
+.members { color: var(--slate); max-width: 38ch; }
+.mbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--brand); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.mbtn[aria-expanded="true"] { background: var(--brand-soft); }
+tr.mrow > td { padding: 0 10px 14px; background: var(--brand-soft); }
+.mlist { display: grid; grid-template-columns: minmax(0, 2.2fr) 0.5fr 0.8fr minmax(0, 2.4fr) 1.1fr 0.6fr; gap: 0 14px; font-size: 14px; }
+.mlist > div { padding: 8px 0; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.mlist .mh { color: var(--slate); font-size: 13px; padding-top: 12px; }
+.mlist .mn { font-weight: 600; }
+.note { font-size: 13px; color: var(--slate); margin: 10px 0 0; }
+.search-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; max-width: 640px; }
+.search-row .search { margin-top: 0; flex: 1; min-width: 0; }
+.search-btn { min-height: 48px; padding: 0 22px; flex: none; }
+.search { box-sizing: border-box; width: 100%; max-width: 520px; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); padding: 0 14px; font-size: 16px; margin-top: 12px; }
+
+footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.pager-info { font-size: 14px; color: var(--slate); font-variant-numeric: tabular-nums; }
+.pager-btns { display: flex; gap: 8px; }
+.pager button { min-height: 42px; min-width: 104px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 600; font-size: 15px; cursor: pointer; }
+.pager button:disabled { opacity: .4; cursor: default; }
+@media (max-width: 640px) { .pager { flex-direction: column-reverse; align-items: stretch; text-align: center; } .pager-btns button { flex: 1; } }
+
+/* ---------- tablet ---------- */
+@media (max-width: 980px) {
+  .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .focus { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .hide-md { display: none; }
+}
+/* ---------- phone ---------- */
+@media (max-width: 640px) {
+  .intro { grid-template-columns: minmax(0, 1fr); }
+  .fbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .fbox > .fsum { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; cursor: pointer; list-style: none; }
+  .fbox > .fsum::-webkit-details-marker { display: none; }
+  .fsum-k { font-weight: 600; }
+  .fsum-k::after { content: " ▾"; color: var(--slate); font-weight: 400; }
+  .fsum-k { white-space: nowrap; flex: none; }
+  .fsum-n { flex: none; }
+  .fbox[open] .fsum-k::after { content: " ▴"; }
+  .fsum-v { color: var(--slate); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .fbox .filters { border: 0; border-top: 1px solid var(--line); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 12px; }
+  .clear { grid-column: 1 / -1; }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .hero-text { font-size: 16px; }
+  .focus { grid-template-columns: minmax(0, 1fr); }
+  .stat-num { font-size: 26px; }
+  .box { padding: 14px; }
+  .table-wrap { overflow: visible; }
+  table, tbody { display: block; }
+  thead { display: none; }
+  tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  td { border: 0; padding: 0; text-align: left !important; }
+  td::before { content: attr(data-label); display: block; font-size: 12px; color: var(--slate); }
+  td.lead { grid-column: 1 / -1; font-weight: 600; font-size: 16px; }
+  td.lead::before, td.wide::before { display: none; }
+  td.wide { grid-column: 1 / -1; }
+  .hide-md { display: block; }
+  .mini { margin-left: 0; }
+  .members { max-width: none; }
+  tr.mrow { display: block; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+  tr.mrow > td { display: block; padding: 4px 12px 8px; border-radius: 10px; }
+  tr.mrow > td::before { display: none; }
+  .mlist { grid-template-columns: minmax(0, 1fr) auto; }
+  .mlist .mh { display: none; }
+  .mlist > div { border: 0; padding: 0; }
+  .mlist .mn { padding-top: 10px; }
+  .mlist .ma { padding-top: 10px; text-align: right; color: var(--slate); }
+  .mlist .mg { display: none; }
+  .mlist .mr, .mlist .me { grid-column: 1 / -1; color: var(--slate); font-size: 13px; }
+  .mlist .ms { display: none; }
+  .mlist .me { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print {
+  .tabs, .filters, .file-info, .search, .search-row { display: none !important; }
+  .panel[hidden] { display: flex !important; }
+  .panel { break-before: page; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand-row">
+      <img class="logo logo-light" alt="KoLogs.com" src="kologs-logo.png">
+      <p class="brand" data-t="brand">Voter Insights</p>
+    </div>
+    <div class="top-right">
+    <div class="file-info" id="fileInfo" hidden>
+      <span id="fileSummary"></span>
+    </div>
+    <div class="lang" role="group" aria-label="Language / భాష">
+      <button type="button" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" data-lang="te" aria-pressed="false" lang="te">తెలుగు</button>
+    </div>
+    </div>
+  </header>
+
+  <!-- ===== loading ===== -->
+  <section class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="loadingText" data-t="loading">Loading voter data…</p>
+    <button class="clear" id="retry" type="button" data-t="retry" hidden>Try again</button>
+  </section>
+
+  <!-- ===== app ===== -->
+  <div id="app" hidden>
+    <details class="fbox" id="fbox" open>
+    <summary class="fsum"><span class="fsum-k" data-t="filters">Filters</span><span class="fsum-n" id="fsumN" aria-hidden="true"></span><span class="fsum-v" id="fsum"></span></summary>
+    <div class="filters" id="filters">
+      <label><span data-t="fConst">Constituency</span><select id="f_ac"></select></label>
+      <label><span data-t="fMandal">Mandal</span><select id="f_mandal"></select></label>
+      <label><span data-t="fVillage">Village</span><select id="f_village"></select></label>
+      <label><span data-t="fBooth">Booth</span><select id="f_booth"></select></label>
+      <label><span data-t="fStreet">Street / section</span><select id="f_section"></select></label>
+      <button class="clear" id="clearFilters" type="button" data-t="showAll">Show everything</button>
+    </div>
+    </details>
+
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" data-tab="overview" type="button" data-t="tabOverview">Overview</button>
+      <button class="tab" role="tab" data-tab="booths" type="button" data-t="tabBooths">Booths</button>
+      <button class="tab" role="tab" data-tab="streets" type="button" data-t="tabStreets">Streets</button>
+      <button class="tab" role="tab" data-tab="homes" type="button" data-t="tabHomes">Households</button>
+      <button class="tab" role="tab" data-tab="search" type="button" data-t="tabSearch">Find a voter</button>
+    </nav>
+
+    <!-- overview -->
+    <section class="panel" id="overview" role="tabpanel">
+      <p class="scope" id="scope"></p>
+      <div class="hero">
+        <div class="hero-num" id="h_total">0</div>
+        <p class="hero-text" id="h_text"></p>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label" data-t="statRatio">Women per 1,000 men</div><div class="stat-num" id="s_ratio"></div><div class="stat-sub" id="s_ratio_sub"></div></div>
+        <div class="stat"><div class="stat-label" data-t="statHouses">Households</div><div class="stat-num" id="s_houses"></div><div class="stat-sub" id="s_houses_sub"></div></div>
+        <div class="stat"><div class="stat-label" data-t="statYoung">Young voters, 18 to 29</div><div class="stat-num" id="s_young"></div><div class="stat-sub" id="s_young_sub"></div></div>
+        <div class="stat"><div class="stat-label" data-t="statOld">Seniors, 60 and over</div><div class="stat-num" id="s_old"></div><div class="stat-sub" id="s_old_sub"></div></div>
+      </div>
+      <div class="box">
+        <h2 data-t="focusTitle">Where to focus</h2>
+        <p data-t="focusSub">What stands out in the area you picked.</p>
+        <div class="focus" id="focus"></div>
+      </div>
+      <div class="box" id="topVillages">
+        <h2 data-t="villTitle">Villages with the most voters</h2>
+        <p data-t="villSub">Ranked by number of voters. Tap a village to see only that village.</p>
+        <div class="chart" id="c_villages"></div>
+        <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
+        <p class="note" id="villagesNote"></p>
+      </div>
+      <div class="box" id="topSurnames">
+        <h2 data-t="snTitle">Surnames with the most voters</h2>
+        <p data-t="snSub">Family names shared by a voter and their father or husband. Tap a surname to find those voters.</p>
+        <div class="chart" id="c_surnames"></div>
+        <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
+        <p class="note" id="surnamesNote"></p>
+      </div>
+      <div class="two">
+        <div class="box">
+          <h2 data-t="ageTitle">Age and gender</h2>
+          <p data-t="ageSub">Men on the left, women on the right.</p>
+          <div class="chart" id="c_pyramid"></div>
+          <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
+        </div>
+        <div class="box">
+          <h2 data-t="streetTitle">Largest streets</h2>
+          <p data-t="streetSub">The 10 sections of the roll with the most voters.</p>
+          <div class="chart" id="c_streets"></div>
+          <div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- booths -->
+    <section class="panel" id="booths" role="tabpanel" hidden>
+      <div class="box">
+        <h2 data-t="boothsTitle">Booths</h2>
+        <p data-t="boothsSub">Every polling booth side by side. Tap a heading to sort, or a booth to open its streets.</p>
+        <div class="table-wrap"><table id="t_booths">
+          <thead><tr>
+            <th data-sort="part" data-t="thBooth">Booth</th><th data-sort="village" data-t="thVillage">Village</th><th data-sort="ac" class="hide-md" data-t="thConst">Constituency</th>
+            <th class="r" data-sort="voters" data-t="thVoters">Voters</th><th class="r hide-md" data-sort="houses" data-t="thHouseholds">Households</th>
+            <th class="r" data-sort="ratio" data-t="thRatio">Women per 1,000 men</th><th class="r" data-sort="youngPct" data-t="th1829">18 to 29</th><th class="r" data-sort="seniorPct">60+</th>
+          </tr></thead><tbody></tbody>
+        </table></div>
+        <div class="pager" data-pager="t_booths" hidden>
+          <span class="pager-info"></span>
+          <div class="pager-btns">
+            <button type="button" data-step="-1" data-t="prev">Previous</button>
+            <button type="button" data-step="1" data-t="next">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- streets -->
+    <section class="panel" id="streets" role="tabpanel" hidden>
+      <div class="box">
+        <h2 data-t="streetsTitle">Streets</h2>
+        <p data-t="streetsSub">Each section of the roll, usually a street or colony. Tap one to see only that street.</p>
+        <div class="table-wrap"><table id="t_streets">
+          <thead><tr>
+            <th data-sort="section" data-t="thStreet">Street / section</th><th data-sort="boothLabel" data-t="thBooth">Booth</th>
+            <th class="r" data-sort="voters" data-t="thVoters">Voters</th><th class="r" data-sort="houses" data-t="thHouses">Houses</th>
+            <th class="r" data-sort="womenPct" data-t="women">Women</th><th class="r" data-sort="young" data-t="th1829">18 to 29</th><th class="r" data-sort="seniors">60+</th>
+          </tr></thead><tbody></tbody>
+        </table></div>
+        <div class="pager" data-pager="t_streets" hidden>
+          <span class="pager-info"></span>
+          <div class="pager-btns">
+            <button type="button" data-step="-1" data-t="prev">Previous</button>
+            <button type="button" data-step="1" data-t="next">Next</button>
+          </div>
+        </div>
+        <p class="note" id="streetsNote"></p>
+      </div>
+    </section>
+
+    <!-- households -->
+    <section class="panel" id="homes" role="tabpanel" hidden>
+      <div class="box">
+        <h2 data-t="homesTitle">Largest households</h2>
+        <p data-t="homesSub">House numbers with the most voters. One visit reaches all of them.</p>
+        <div class="table-wrap"><table id="t_homes">
+          <thead><tr>
+            <th data-t="thHouseNo">House no.</th><th data-t="thBooth">Booth</th><th class="r" data-t="thVoters">Voters</th><th data-t="thStreet">Street / section</th><th data-t="thMembers">Members</th>
+          </tr></thead><tbody></tbody>
+        </table></div>
+        <div class="pager" data-pager="t_homes" hidden>
+          <span class="pager-info"></span>
+          <div class="pager-btns">
+            <button type="button" data-step="-1" data-t="prev">Previous</button>
+            <button type="button" data-step="1" data-t="next">Next</button>
+          </div>
+        </div>
+        <p class="note" id="homesNote"></p>
+      </div>
+    </section>
+
+    <!-- search -->
+    <section class="panel" id="search" role="tabpanel" hidden>
+      <div class="box">
+        <h2 data-t="tabSearch">Find a voter</h2>
+        <p data-t="searchSub">Search by name, relative's name, EPIC number or house number, inside the area picked above.</p>
+        <form class="search-row" id="searchForm" role="search">
+          <input class="search" id="q" type="search" placeholder="Try a name, UDP0651778 or 12-342" data-tp="searchPh" aria-label="Search voters" autocomplete="off" enterkeyhint="search">
+          <button class="btn search-btn" type="submit" data-t="searchBtn">Search</button>
+        </form>
+        <p class="note" id="searchNote"></p>
+        <div class="table-wrap"><table id="t_search">
+          <thead><tr>
+            <th data-t="mName">Name</th><th>EPIC</th><th data-t="mRelative">Relative</th><th data-t="thHouse">House</th><th class="r" data-t="mAge">Age</th><th data-t="mGender">Gender</th><th data-t="thBooth">Booth</th><th class="r" data-t="mSerial">Serial</th><th data-t="thStreet">Street / section</th>
+          </tr></thead><tbody></tbody>
+        </table></div>
+        <div class="pager" data-pager="t_search" hidden>
+          <span class="pager-info"></span>
+          <div class="pager-btns">
+            <button type="button" data-step="-1" data-t="prev">Previous</button>
+            <button type="button" data-step="1" data-t="next">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer data-t="footer">Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.</footer>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const fmt = (n) => (n == null || !isFinite(n) ? '–' : Math.round(n).toLocaleString('en-IN'));
+
+  // ---------- language ----------
+  const I18N = {
+    en: {
+      loading: 'Loading voter data…', loadFail: 'Could not load the voter data. Check your connection and try again.', retry: 'Try again',
+      dataSummary: (n, d) => `${n} voters${d ? ', updated ' + d : ''}`,
+      typeToSearch: 'Type at least 3 letters of a name, or an EPIC or house number.', searching: 'Searching…', searchFail: 'Search failed. Please try again.',
+      searchBtn: 'Search', first200: (n, t) => `${t} voters found. Showing the first ${n}; add a family name or pick a village to narrow down.`,
+      loadingMembers: 'Loading members…', membersFail: 'Could not load the members. Please try again.',
+      notConfigured: 'The website is not connected to its database yet. Put the Supabase address and key in config.js.',
+      asleep: 'The voter search is starting up after a quiet period. Please try again in a minute.',
+      brand: 'Voter Insights', addFile: 'Add another file', removeData: 'Remove data',
+      introTitle: 'See your constituency, booth by booth.',
+      introText: 'Open the electoral roll file you extracted, and this page shows voters by village, booth, street and household, with a search for any voter.',
+      introPrivacy: 'Your file stays on this device. Nothing is uploaded.',
+      dropTitle: 'Open your roll file', dropHint: 'Drag it here, or choose it from your computer.', chooseFile: 'Choose file',
+      formats: 'all_electoral_rolls.csv or .xlsx, or a CSV downloaded from Google Sheets. You can add several constituencies one after another.',
+      colsQ: 'Which columns does it need?',
+      colsA: 'Name, Age, Gender, Assembly Constituency, Part Number and Section are needed. EPIC Number, Relative Name, House Number, Village and Tehsil (Mandal) are used when present. These are the column names the extraction script writes.',
+      filters: 'Filters', fConst: 'Constituency', fMandal: 'Mandal', fVillage: 'Village', fBooth: 'Booth', fStreet: 'Street / section', showAll: 'Show everything',
+      tabOverview: 'Overview', tabBooths: 'Booths', tabStreets: 'Streets', tabHomes: 'Households', tabSearch: 'Find a voter',
+      statRatio: 'Women per 1,000 men', statHouses: 'Households', statYoung: 'Young voters, 18 to 29', statOld: 'Seniors, 60 and over',
+      focusTitle: 'Where to focus', focusSub: 'What stands out in the area you picked.',
+      villTitle: 'Villages with the most voters', villSub: 'Ranked by number of voters. Tap a village to see only that village.',
+      men: 'Men', women: 'Women',
+      ageTitle: 'Age and gender', ageSub: 'Men on the left, women on the right.',
+      streetTitle: 'Largest streets', streetSub: 'The 10 sections of the roll with the most voters.',
+      boothsTitle: 'Booths', boothsSub: 'Every polling booth side by side. Tap a heading to sort, or a booth to open its streets.',
+      streetsTitle: 'Streets', streetsSub: 'Each section of the roll, usually a street or colony. Tap one to see only that street.',
+      homesTitle: 'Largest households', homesSub: 'House numbers with the most voters. One visit reaches all of them.',
+      searchSub: "Search by name, relative's name, EPIC number or house number, inside the area picked above.",
+      searchPh: 'Try a name, UDP0651778 or 12-342',
+      thBooth: 'Booth', thVillage: 'Village', thConst: 'Constituency', thVoters: 'Voters', thHouseholds: 'Households', thRatio: 'Women per 1,000 men',
+      th1829: '18 to 29', thStreet: 'Street / section', thHouses: 'Houses', thHouseNo: 'House no.', thMembers: 'Members', thHouse: 'House',
+      prev: 'Previous', next: 'Next',
+      footer: 'Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.',
+      allConst: 'All constituencies', allMandals: 'All mandals', allVillages: 'All villages', allBooths: 'All booths', allStreets: 'All streets',
+      mandalOf: (m) => `${m} mandal`, part: (n) => `Part ${n}`,
+      hero: (h, b, v, m, w) => [['voters in '], [h, 1], [' households, across '], [b, 1], [' booths in '], [v, 1], [' villages. '], [m, 1], [' men and '], [w, 1], [' women.']],
+      womenShare: (p) => `Women are ${p} of voters`, perHouse: (x) => `${x} voters per house`,
+      firstTime: (n) => `${n} are 18 to 21, new to voting`, veryOld: (n) => `${n} are 75+ and may need help to vote`,
+      fStreetMost: 'Street with most voters', fYoung: 'Most young voters', fSenior: 'Most seniors', fHouse: 'Biggest household',
+      fLow: 'Fewest women per 1,000 men', fYoungBooth: 'Youngest booth',
+      nVoters: (n) => `${n} voters`, nYoung: (n) => `${n} aged 18 to 29`, nOld: (n) => `${n} aged 60+`, houseAt: (h, l) => `House ${h}, ${l}`,
+      nRatio: (n) => `${n} women per 1,000 men`, pctYoung: (p) => `${p} aged 18 to 29`,
+      tipMW: (label, m, w) => `${label}: ${m} men, ${w} women`,
+      tipVillage: (v, n, m, w, b) => `${v}: ${n} voters (${m} men, ${w} women) in ${b} booth${b === '1' ? '' : 's'}`,
+      nBooths: (b) => `${b} booth${b === '1' ? '' : 's'}`,
+      snTitle: 'Surnames with the most voters', snSub: 'Family names shared by a voter and their father or husband. Tap a surname to find those voters.',
+      snNote: (p) => `Surname found for ${p} of voters in this area. Spellings that differ slightly, like Chitturi and Chitthuri, are counted together.`,
+      snTip: (sn, n, h, b) => `${sn}: ${n} voters in ${h} houses, across ${b} booths`, snHouses: (h) => `${h} houses`,
+      villNote: (n, p) => `Showing the 10 largest of ${n} villages. These 10 hold ${p} of voters. Use the Village filter to open any other village.`,
+      noStreets: 'No streets in this area.',
+      pager: (a, b, t, noun, p, ps) => `Showing ${a} to ${b} of ${t} ${noun}, page ${p} of ${ps}`,
+      nounBooths: 'booths', nounStreets: 'streets', nounHomes: 'households', nounVoters: 'voters',
+      streetsCount: (n) => `${n} street${n === '1' ? '' : 's'}.`,
+      homesNote: 'The 10 largest households of each booth are listed, biggest first.',
+      found: (n) => `${n} voter${n === '1' ? '' : 's'} found.`, narrow: ' Type a name or number to narrow down.',
+      seeMembers: (n) => `See ${n} members`, hideMembers: 'Hide members',
+      mName: 'Name', mAge: 'Age', mGender: 'Gender', mRelative: 'Relative', mSerial: 'Serial', serialWord: 'serial',
+      Father: 'Father', Husband: 'Husband', Mother: 'Mother', Wife: 'Wife',
+      Male: 'Male', Female: 'Female', Other: 'Other',
+      lblVillage: 'Village', lblMandal: 'Mandal', lblBooths: 'Booths', lblVoters: 'Voters', lblRatio: 'Women per 1,000 men',
+      lbl1829: 'Aged 18 to 29', lbl60: 'Aged 60+', lblBooth: 'Booth', lblConst: 'Constituency', lblHouseholds: 'Households',
+      lblStreet: 'Street', lblHouses: 'Houses', lblWomen: 'Women', lblHouse: 'House', lblMembers: 'Members',
+      fileSummary: (n, f) => `${n} voters from ${f}`, nFiles: (n) => `${n} files`,
+      reading: (f, n) => `Reading ${f}: ${n} voters`, readingX: (f) => `Reading ${f}`,
+      openingX: (f) => `Opening ${f}. Large Excel files take a little while.`, building: 'Working out booths and streets',
+      openingSaved: (n) => `Opening saved data: ${n} voters`,
+      missing: (f, c) => `${f} is missing these columns: ${c}. Open the file made by the extraction script (all_electoral_rolls.csv).`,
+      noRows: (f) => `${f} has no voter rows.`, readFail: (f, m) => `Could not read ${f}: ${m}`,
+    },
+    te: {
+      loading: 'ఓటర్ల వివరాలు లోడ్ అవుతున్నాయి…', loadFail: 'ఓటర్ల వివరాలు లోడ్ కాలేదు. ఇంటర్నెట్ చూసి మళ్లీ ప్రయత్నించండి.', retry: 'మళ్లీ ప్రయత్నించండి',
+      dataSummary: (n, d) => `${n} ఓటర్లు${d ? ', నవీకరణ ' + d : ''}`,
+      typeToSearch: 'పేరులో కనీసం 3 అక్షరాలు, లేదా EPIC / ఇంటి నంబరు టైప్ చేయండి.', searching: 'వెతుకుతున్నాం…', searchFail: 'వెతకడం విఫలమైంది. మళ్లీ ప్రయత్నించండి.',
+      searchBtn: 'వెతకండి', first200: (n, t) => `${t} ఓటర్లు దొరికారు. మొదటి ${n} చూపిస్తున్నాం; ఇంటి పేరు చేర్చండి లేదా గ్రామం ఎంచుకోండి.`,
+      loadingMembers: 'సభ్యుల వివరాలు లోడ్ అవుతున్నాయి…', membersFail: 'సభ్యుల వివరాలు లోడ్ కాలేదు. మళ్లీ ప్రయత్నించండి.',
+      notConfigured: 'వెబ్‌సైట్ ఇంకా డేటాబేస్‌కు కనెక్ట్ కాలేదు. config.jsలో Supabase చిరునామా, కీ ఉంచండి.',
+      asleep: 'కొంతకాలం వాడకపోవడంతో ఓటరు శోధన మళ్లీ మొదలవుతోంది. ఒక నిమిషం తర్వాత మళ్లీ ప్రయత్నించండి.',
+      brand: 'ఓటర్ల విశ్లేషణ', addFile: 'మరో ఫైల్ జోడించండి', removeData: 'డేటా తొలగించండి',
+      introTitle: 'మీ నియోజకవర్గాన్ని బూత్‌ల వారీగా చూడండి.',
+      introText: 'మీరు సిద్ధం చేసిన ఓటర్ల జాబితా ఫైల్‌ను తెరవండి. గ్రామం, బూత్, వీధి, కుటుంబం వారీగా ఓటర్ల వివరాలు ఇక్కడ కనిపిస్తాయి. ఏ ఓటరునైనా వెతకవచ్చు.',
+      introPrivacy: 'మీ ఫైల్ ఈ పరికరంలోనే ఉంటుంది. ఏదీ అప్‌లోడ్ కాదు.',
+      dropTitle: 'మీ ఓటర్ల జాబితా ఫైల్ తెరవండి', dropHint: 'ఫైల్‌ను ఇక్కడికి లాగండి, లేదా మీ కంప్యూటర్ నుండి ఎంచుకోండి.', chooseFile: 'ఫైల్ ఎంచుకోండి',
+      formats: 'all_electoral_rolls.csv లేదా .xlsx, లేదా Google Sheets నుండి డౌన్‌లోడ్ చేసిన CSV. ఒకదాని తర్వాత ఒకటిగా పలు నియోజకవర్గాలు జోడించవచ్చు.',
+      colsQ: 'ఏ కాలమ్‌లు అవసరం?',
+      colsA: 'Name, Age, Gender, Assembly Constituency, Part Number, Section తప్పనిసరి. EPIC Number, Relative Name, House Number, Village, Tehsil (Mandal) ఉంటే వాటిని కూడా వాడుతుంది. ఇవి ఎక్స్‌ట్రాక్షన్ స్క్రిప్ట్ రాసే కాలమ్ పేర్లు.',
+      filters: 'ఫిల్టర్లు', fConst: 'నియోజకవర్గం', fMandal: 'మండలం', fVillage: 'గ్రామం', fBooth: 'బూత్', fStreet: 'వీధి / విభాగం', showAll: 'అన్నీ చూపించు',
+      tabOverview: 'సారాంశం', tabBooths: 'బూత్‌లు', tabStreets: 'వీధులు', tabHomes: 'కుటుంబాలు', tabSearch: 'ఓటరును వెతకండి',
+      statRatio: 'ప్రతి 1,000 మంది పురుషులకు మహిళలు', statHouses: 'కుటుంబాలు', statYoung: 'యువ ఓటర్లు, 18–29', statOld: 'వృద్ధులు, 60 పైబడినవారు',
+      focusTitle: 'ఎక్కడ దృష్టి పెట్టాలి', focusSub: 'మీరు ఎంచుకున్న ప్రాంతంలో ప్రత్యేకంగా కనిపించేవి.',
+      villTitle: 'ఎక్కువ ఓటర్లు ఉన్న గ్రామాలు', villSub: 'ఓటర్ల సంఖ్య ప్రకారం వరుస. ఒక గ్రామాన్ని నొక్కితే ఆ గ్రామం వివరాలు మాత్రమే కనిపిస్తాయి.',
+      men: 'పురుషులు', women: 'మహిళలు',
+      ageTitle: 'వయస్సు మరియు లింగం', ageSub: 'ఎడమవైపు పురుషులు, కుడివైపు మహిళలు.',
+      streetTitle: 'పెద్ద వీధులు', streetSub: 'అత్యధిక ఓటర్లు ఉన్న 10 విభాగాలు.',
+      boothsTitle: 'బూత్‌లు', boothsSub: 'అన్ని పోలింగ్ బూత్‌లు పక్కపక్కనే. క్రమంలో అమర్చడానికి శీర్షికను, వీధులు చూడటానికి బూత్‌ను నొక్కండి.',
+      streetsTitle: 'వీధులు', streetsSub: 'జాబితాలోని ప్రతి విభాగం, సాధారణంగా ఒక వీధి లేదా కాలనీ. ఆ వీధి మాత్రమే చూడటానికి నొక్కండి.',
+      homesTitle: 'పెద్ద కుటుంబాలు', homesSub: 'అత్యధిక ఓటర్లు ఉన్న ఇంటి నంబర్లు. ఒక్కసారి వెళ్తే అందరినీ కలవవచ్చు.',
+      searchSub: 'పై ఎంచుకున్న ప్రాంతంలో పేరు, బంధువు పేరు, EPIC నంబరు లేదా ఇంటి నంబరుతో వెతకండి.',
+      searchPh: 'పేరు, UDP0651778 లేదా 12-342',
+      thBooth: 'బూత్', thVillage: 'గ్రామం', thConst: 'నియోజకవర్గం', thVoters: 'ఓటర్లు', thHouseholds: 'కుటుంబాలు', thRatio: '1,000 పురుషులకు మహిళలు',
+      th1829: '18–29', thStreet: 'వీధి / విభాగం', thHouses: 'ఇళ్లు', thHouseNo: 'ఇంటి నం.', thMembers: 'సభ్యులు', thHouse: 'ఇల్లు',
+      prev: 'వెనుకకు', next: 'తరువాత',
+      footer: 'గణాంకాలు 2026 ప్రత్యేక సమగ్ర సవరణ (SIR) ముసాయిదా ఓటర్ల జాబితాల నుండి తీసుకున్నవి. స్కాన్ చేసిన PDFల నుండి చదివినందున కొన్ని పేర్లలో చిన్న అక్షర తేడాలు ఉండవచ్చు. ఒక బూత్‌లోని వేర్వేరు ఇంటి నంబర్లను కుటుంబాలుగా లెక్కించాం. వయస్సులు 01-07-2026 నాటికి జాబితాలో ఉన్నట్లు.',
+      allConst: 'అన్ని నియోజకవర్గాలు', allMandals: 'అన్ని మండలాలు', allVillages: 'అన్ని గ్రామాలు', allBooths: 'అన్ని బూత్‌లు', allStreets: 'అన్ని వీధులు',
+      mandalOf: (m) => `${m} మండలం`, part: (n) => `భాగం ${n}`,
+      hero: (h, b, v, m, w) => [['మంది ఓటర్లు, '], [h, 1], [' కుటుంబాలు, '], [b, 1], [' బూత్‌లు, '], [v, 1], [' గ్రామాలు. '], [m, 1], [' పురుషులు, '], [w, 1], [' మహిళలు.']],
+      womenShare: (p) => `ఓటర్లలో ${p} మహిళలు`, perHouse: (x) => `ఒక్కో ఇంటికి ${x} ఓటర్లు`,
+      firstTime: (n) => `${n} మంది 18–21 ఏళ్లవారు, కొత్త ఓటర్లు`, veryOld: (n) => `${n} మంది 75+ ఏళ్లవారు, ఓటు వేయడానికి సహాయం అవసరం కావచ్చు`,
+      fStreetMost: 'ఎక్కువ ఓటర్లు ఉన్న వీధి', fYoung: 'ఎక్కువ యువ ఓటర్లు', fSenior: 'ఎక్కువ వృద్ధులు', fHouse: 'పెద్ద కుటుంబం',
+      fLow: '1,000 పురుషులకు అతి తక్కువ మహిళలు', fYoungBooth: 'యువత ఎక్కువగా ఉన్న బూత్',
+      nVoters: (n) => `${n} ఓటర్లు`, nYoung: (n) => `${n} మంది 18–29 ఏళ్లవారు`, nOld: (n) => `${n} మంది 60+ ఏళ్లవారు`, houseAt: (h, l) => `ఇల్లు ${h}, ${l}`,
+      nRatio: (n) => `1,000 పురుషులకు ${n} మహిళలు`, pctYoung: (p) => `${p} మంది 18–29 ఏళ్లవారు`,
+      tipMW: (label, m, w) => `${label}: ${m} పురుషులు, ${w} మహిళలు`,
+      tipVillage: (v, n, m, w, b) => `${v}: ${n} ఓటర్లు (${m} పురుషులు, ${w} మహిళలు), ${b} బూత్‌లు`,
+      nBooths: (b) => `${b} బూత్‌లు`,
+      snTitle: 'ఎక్కువ ఓటర్లు ఉన్న ఇంటి పేర్లు', snSub: 'ఓటరు పేరులో మరియు తండ్రి లేదా భర్త పేరులో ఉన్న ఇంటి పేరు. ఆ ఓటర్లను వెతకడానికి ఇంటి పేరును నొక్కండి.',
+      snNote: (p) => `ఈ ప్రాంతంలో ${p} ఓటర్లకు ఇంటి పేరు గుర్తించాం. Chitturi, Chitthuri వంటి కొద్దిగా వేరైన అక్షరక్రమాలను కలిపి లెక్కించాం.`,
+      snTip: (sn, n, h, b) => `${sn}: ${n} ఓటర్లు, ${h} ఇళ్లు, ${b} బూత్‌లు`, snHouses: (h) => `${h} ఇళ్లు`,
+      villNote: (n, p) => `మొత్తం ${n} గ్రామాలలో పెద్ద 10 చూపిస్తున్నాం. ఈ 10 గ్రామాల్లో ${p} ఓటర్లు ఉన్నారు. ఇతర గ్రామాల కోసం గ్రామం ఫిల్టర్ వాడండి.`,
+      noStreets: 'ఈ ప్రాంతంలో వీధులు లేవు.',
+      pager: (a, b, t, noun, p, ps) => `మొత్తం ${t} ${noun}, ${a} నుండి ${b} వరకు, పేజీ ${p} / ${ps}`,
+      nounBooths: 'బూత్‌లు', nounStreets: 'వీధులు', nounHomes: 'కుటుంబాలు', nounVoters: 'ఓటర్లు',
+      streetsCount: (n) => `${n} వీధులు.`,
+      homesNote: 'ప్రతి బూత్‌లోని 10 పెద్ద కుటుంబాలు, పెద్దవి ముందుగా.',
+      found: (n) => `${n} ఓటర్లు దొరికారు.`, narrow: ' తగ్గించడానికి పేరు లేదా నంబరు టైప్ చేయండి.',
+      seeMembers: (n) => `${n} మంది సభ్యులను చూడండి`, hideMembers: 'సభ్యులను దాచండి',
+      mName: 'పేరు', mAge: 'వయస్సు', mGender: 'లింగం', mRelative: 'బంధువు', mSerial: 'క్రమ సంఖ్య', serialWord: 'క్రమ సంఖ్య',
+      Father: 'తండ్రి', Husband: 'భర్త', Mother: 'తల్లి', Wife: 'భార్య',
+      Male: 'పురుషుడు', Female: 'స్త్రీ', Other: 'ఇతరులు',
+      lblVillage: 'గ్రామం', lblMandal: 'మండలం', lblBooths: 'బూత్‌లు', lblVoters: 'ఓటర్లు', lblRatio: '1,000 పురుషులకు మహిళలు',
+      lbl1829: '18–29 ఏళ్లు', lbl60: '60+ ఏళ్లు', lblBooth: 'బూత్', lblConst: 'నియోజకవర్గం', lblHouseholds: 'కుటుంబాలు',
+      lblStreet: 'వీధి', lblHouses: 'ఇళ్లు', lblWomen: 'మహిళలు', lblHouse: 'ఇల్లు', lblMembers: 'సభ్యులు',
+      fileSummary: (n, f) => `${f} నుండి ${n} ఓటర్లు`, nFiles: (n) => `${n} ఫైళ్లు`,
+      reading: (f, n) => `${f} చదువుతున్నాం: ${n} ఓటర్లు`, readingX: (f) => `${f} చదువుతున్నాం`,
+      openingX: (f) => `${f} తెరుస్తున్నాం. పెద్ద Excel ఫైళ్లకు కొంచెం సమయం పడుతుంది.`, building: 'బూత్‌లు, వీధుల లెక్కలు చేస్తున్నాం',
+      openingSaved: (n) => `సేవ్ చేసిన డేటా తెరుస్తున్నాం: ${n} ఓటర్లు`,
+      missing: (f, c) => `${f}లో ఈ కాలమ్‌లు లేవు: ${c}. ఎక్స్‌ట్రాక్షన్ స్క్రిప్ట్ తయారు చేసిన ఫైల్ (all_electoral_rolls.csv) తెరవండి.`,
+      noRows: (f) => `${f}లో ఓటర్ల వరుసలు లేవు.`, readFail: (f, m) => `${f} చదవలేకపోయాం: ${m}`,
+    },
+  };
+  let LANG = 'en';
+  try { LANG = localStorage.getItem('vi-lang') === 'te' ? 'te' : 'en'; } catch (e) { /* ignore */ }
+  const T = (k, ...a) => { const v = I18N[LANG][k] ?? I18N.en[k]; return typeof v === 'function' ? v(...a) : v; };
+  const gWord = (g) => T(g === 'F' ? 'Female' : g === 'M' ? 'Male' : 'Other');
+  const partLabel = (part, village) => `${T('part', part)}, ${village}`;
+  function applyStatic() {
+    document.documentElement.lang = LANG === 'te' ? 'te' : 'en-IN';
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T(el.dataset.t); });
+    document.querySelectorAll('[data-tp]').forEach((el) => { el.placeholder = T(el.dataset.tp); });
+    document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === LANG));
+  }
+
+  const pct = (x) => (x == null || !isFinite(x) ? '–' : Math.round(x * 100) + '%');
+  const BANDS = [['18–19', 18, 19], ['20–29', 20, 29], ['30–39', 30, 39], ['40–49', 40, 49], ['50–59', 50, 59], ['60–69', 60, 69], ['70–79', 70, 79], ['80+', 80, 200]];
+  const bandOf = (a) => (a < 20 ? 0 : a >= 80 ? 7 : Math.floor(a / 10) - 1);
+
+  // ---------- state ----------
+  let booths = [], streets = [], homesByBooth = new Map(), surnameRows = [], snNames = new Map();
+  let TOTAL = 0, UPDATED = '';
+  const boothById = new Map();
+  const F = { ac: '', mandal: '', village: '', booth: '', section: '' };
+  const sortState = { t_villages: { k: 'voters', d: -1 }, t_booths: { k: 'part', d: 1 }, t_streets: { k: 'voters', d: -1 } };
+  let tab = 'overview', query = '';
+
+  // ---------- data from the server ----------
+  const SB_URL = String(window.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  const SB_KEY = String(window.SUPABASE_KEY || '').trim();
+  // Calls one of the database functions (search_voters, house_members). The key is public by design;
+  // the table itself is locked, so only these functions can be used.
+  async function rpc(fn, body) {
+    const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
+    if (SB_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SB_KEY;   // older "anon" keys
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!res.ok) {
+      const err = new Error('HTTP ' + res.status);
+      err.asleep = res.status === 503 || res.status === 540 || res.status === 522;
+      throw err;
+    }
+    return res.json();
+  }
+  async function load() {
+    $('#loading').hidden = false; $('#retry').hidden = true;
+    $('#loadingText').textContent = T('loading');
+    if (!SB_URL || !SB_KEY || SB_URL.includes('PASTE') || SB_KEY.includes('PASTE')) { $('#loadingText').textContent = T('notConfigured'); return; }
+    try {
+      const res = await fetch('data.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      use(await res.json());
+      return start();
+    } catch (e) {
+      console.error(e);
+      $('#loadingText').textContent = T('loadFail');
+      $('#retry').hidden = false;
+    }
+  }
+  function use(d) {
+    // the Apps Script sends a compact format: names listed once, rows refer to them by number
+    TOTAL = d.total; UPDATED = d.updated;
+    booths = d.booths;
+    boothById.clear(); booths.forEach((b) => boothById.set(b.id, b));
+    const S = d.sections;
+    streets = d.streets.map((r) => {
+      const b = booths[r[0]];
+      return { id: b.id + '|' + S[r[1]], booth: b.id, section: S[r[1]],
+        voters: r[2], men: r[3], women: r[4], other: r[5], young: r[6], first: r[7], seniors: r[8], old: r[9], houses: r[10],
+        bands: r.slice(11, 27), ac: b.ac, mandal: b.mandal, village: b.village, part: b.part };
+    });
+    homesByBooth = new Map();
+    d.homes.forEach((r) => {
+      const id = booths[r[0]].id;
+      if (!homesByBooth.has(id)) homesByBooth.set(id, []);
+      homesByBooth.get(id).push({ booth: id, house: r[1], n: r[2], sections: r[3], members: null });
+    });
+    homesByBooth.forEach((list) => list.sort((a, b) => b.n - a.n));
+    surnameRows = d.surnames.map((r) => [booths[r[0]].id, S[r[1]], String(r[2]), r[3], r[4], r[5], r[6]]);
+    snNames = new Map((d.snNames || []).map((n, i) => [String(i), n]));
+    relabel();
+  }
+  $('#retry').addEventListener('click', () => load());
+
+  // ---------- filtering ----------
+  const inF = (r, withSection) => (!F.ac || r.ac === F.ac) && (!F.mandal || r.mandal === F.mandal) && (!F.village || r.village === F.village) &&
+    (!F.booth || (r.booth || r.id) === F.booth) && (!withSection || !F.section || r.section === F.section);
+  const fBooths = () => booths.filter((b) => (!F.ac || b.ac === F.ac) && (!F.mandal || b.mandal === F.mandal) && (!F.village || b.village === F.village) && (!F.booth || b.id === F.booth));
+  const fStreets = () => streets.filter((s) => inF(s, true));
+  const sum = (rows) => {
+    const a = { voters: 0, men: 0, women: 0, young: 0, first: 0, seniors: 0, old: 0, houses: 0, bands: new Array(16).fill(0) };
+    for (const r of rows) { for (const k of ['voters', 'men', 'women', 'young', 'first', 'seniors', 'old', 'houses']) a[k] += r[k]; r.bands.forEach((n, i) => { a.bands[i] += n; }); }
+    return a;
+  };
+
+  // ---------- filter controls ----------
+  const uniq = (a) => [...new Set(a)].filter(Boolean).sort((x, y) => String(x).localeCompare(String(y), undefined, { numeric: true }));
+  function fillSelect(sel, all, items, value) {
+    sel.replaceChildren(new Option(all, ''), ...items.map(([v, label]) => new Option(label, v)));
+    sel.value = items.some(([v]) => v === value) ? value : '';
+    return sel.value;
+  }
+  function renderFilters() {
+    F.ac = fillSelect($('#f_ac'), T('allConst'), uniq(booths.map((b) => b.ac)).map((x) => [x, x]), F.ac);
+    const b1 = booths.filter((b) => !F.ac || b.ac === F.ac);
+    F.mandal = fillSelect($('#f_mandal'), T('allMandals'), uniq(b1.map((b) => b.mandal)).map((x) => [x, x]), F.mandal);
+    const b2 = b1.filter((b) => !F.mandal || b.mandal === F.mandal);
+    F.village = fillSelect($('#f_village'), T('allVillages'), uniq(b2.map((b) => b.village)).map((x) => [x, x]), F.village);
+    const b3 = b2.filter((b) => !F.village || b.village === F.village).sort((a, b) => a.ac.localeCompare(b.ac) || a.part - b.part);
+    F.booth = fillSelect($('#f_booth'), T('allBooths'), b3.map((b) => [b.id, b.label]), F.booth);
+    const secs = streets.filter((s) => inF(s, false));
+    F.section = fillSelect($('#f_section'), T('allStreets'), uniq(secs.map((s) => s.section)).map((x) => [x, x]), F.section);
+    $('#f_section').disabled = !F.booth && !F.village && secs.length > 400;
+    // highlight what is filtered, and the way back to everything
+    const active = ['ac', 'mandal', 'village', 'booth', 'section'].filter((k) => F[k]);
+    $('#clearFilters').classList.toggle('on', active.length > 0);
+    ['ac', 'mandal', 'village', 'booth', 'section'].forEach((k) => $('#f_' + k).classList.toggle('set', !!F[k]));
+    const n = $('#fsumN'); if (n) { n.textContent = active.length; n.classList.toggle('on', active.length > 0); }
+  }
+  const setF = (patch) => { Object.assign(F, patch); Object.keys(pageOf).forEach((k) => { pageOf[k] = 0; }); renderAll(); };
+  $('#f_ac').addEventListener('change', (e) => setF({ ac: e.target.value, mandal: '', village: '', booth: '', section: '' }));
+  $('#f_mandal').addEventListener('change', (e) => setF({ mandal: e.target.value, village: '', booth: '', section: '' }));
+  $('#f_village').addEventListener('change', (e) => setF({ village: e.target.value, booth: '', section: '' }));
+  $('#f_booth').addEventListener('change', (e) => setF({ booth: e.target.value, section: '' }));
+  $('#f_section').addEventListener('change', (e) => setF({ section: e.target.value }));
+  $('#clearFilters').addEventListener('click', () => setF({ ac: '', mandal: '', village: '', booth: '', section: '' }));
+
+  // ---------- tabs ----------
+  const TABS = ['overview', 'booths', 'streets', 'homes', 'search'];
+  function showTab(id, fromHash) {
+    tab = TABS.includes(id) ? id : 'overview';
+    document.querySelectorAll('.panel').forEach((p) => { p.hidden = p.id !== tab; });
+    document.querySelectorAll('.tab').forEach((b) => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
+    if (!fromHash && location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab);
+    renderTab();
+  }
+  document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+    showTab(b.dataset.tab);
+    const top = $('.tabs').getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > top) window.scrollTo({ top, behavior: 'auto' });
+    b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (b.dataset.tab === 'search') $('#q').focus({ preventScroll: true });
+  }));
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1), true));
+
+  // ---------- rendering ----------
+  function renderAll() { renderFilters(); renderScope(); renderTab(); }
+  function renderTab() {
+    if (!booths.length) return;
+    if (tab === 'overview') renderOverview();
+    else if (tab === 'booths') renderBooths();
+    else if (tab === 'streets') renderStreets();
+    else if (tab === 'homes') renderHomes();
+    else if (tab === 'search') renderSearch();
+  }
+  function renderScope() {
+    const b = F.booth && booths.find((x) => x.id === F.booth);
+    const sc = [F.ac || T('allConst'), F.mandal && T('mandalOf', F.mandal), F.village, b && T('part', b.part), F.section].filter(Boolean).join('  ›  ');
+    $('#scope').textContent = sc;
+    $('#fsum').textContent = sc;
+  }
+
+  function renderOverview() {
+    const bs = fBooths();
+    const ss = fStreets();
+    const a = F.section ? sum(ss) : sum(bs);
+    const villages = new Set(bs.map((b) => b.ac + '|' + b.village)).size;
+    $('#h_total').textContent = fmt(a.voters);
+    $('#h_text').innerHTML = '';
+    const t = $('#h_text');
+    const part = (txt, bold) => { const el = document.createElement(bold ? 'b' : 'span'); el.textContent = txt; t.appendChild(el); };
+    T('hero', fmt(a.houses), fmt(bs.length), fmt(villages), fmt(a.men), fmt(a.women)).forEach(([txt, bold]) => part(txt, bold));
+
+    $('#s_ratio').textContent = a.men ? fmt(a.women / a.men * 1000) : '–';
+    $('#s_ratio_sub').textContent = T('womenShare', pct(a.women / a.voters));
+    $('#s_houses').textContent = fmt(a.houses);
+    $('#s_houses_sub').textContent = a.houses ? T('perHouse', (a.voters / a.houses).toFixed(1)) : '';
+    $('#s_young').textContent = fmt(a.young);
+    $('#s_young_sub').textContent = T('firstTime', fmt(a.first));
+    $('#s_old').textContent = fmt(a.seniors);
+    $('#s_old_sub').textContent = T('veryOld', fmt(a.old));
+
+    // focus
+    const items = [];
+    const topBy = (rows, f) => rows.reduce((x, y) => (f(y) > f(x) ? y : x), rows[0]);
+    if (ss.length) {
+      const big = topBy(ss, (s) => s.voters), yg = topBy(ss, (s) => s.young), sn = topBy(ss, (s) => s.seniors);
+      items.push([T('fStreetMost'), `${big.section}, ${big.boothLabel}`, T('nVoters', fmt(big.voters))]);
+      items.push([T('fYoung'), `${yg.section}, ${yg.boothLabel}`, T('nYoung', fmt(yg.young))]);
+      items.push([T('fSenior'), `${sn.section}, ${sn.boothLabel}`, T('nOld', fmt(sn.seniors))]);
+    }
+    const hs = bs.flatMap((b) => homesByBooth.get(b.id) || []).filter((h) => !F.section || h.sections.split(' / ').includes(F.section));
+    if (hs.length) { const h = topBy(hs, (x) => x.n); items.push([T('fHouse'), T('houseAt', h.house, h.label), T('nVoters', fmt(h.n))]); }
+    const real = bs.filter((b) => b.voters >= 100 && b.men);
+    if (real.length > 1 && !F.booth) {
+      const lw = real.reduce((x, y) => (y.women / y.men < x.women / x.men ? y : x));
+      items.push([T('fLow'), lw.label, T('nRatio', fmt(lw.women / lw.men * 1000))]);
+      const yb = topBy(real, (b) => b.young / b.voters);
+      items.push([T('fYoungBooth'), yb.label, T('pctYoung', pct(yb.young / yb.voters))]);
+    }
+    const box = $('#focus'); box.replaceChildren();
+    for (const [k, v, n] of items) {
+      const d = document.createElement('div'); d.className = 'focus-item';
+      const a1 = document.createElement('div'); a1.className = 'k'; a1.textContent = k;
+      const a2 = document.createElement('div'); a2.className = 'v'; a2.textContent = v;
+      const a3 = document.createElement('div'); a3.className = 'small muted'; a3.textContent = n;
+      d.append(a1, a2, a3); box.appendChild(d);
+    }
+    drawPyramid(a.bands);
+    drawStreets(ss.slice().sort((x, y) => y.voters - x.voters).slice(0, 10));
+    drawVillages(bs);
+    drawSurnames(bs);
+  }
+
+  // ---------- charts ----------
+  function tipFor(el) {
+    let tip = el.querySelector('.tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; el.appendChild(tip); }
+    return {
+      show(ev, text) {
+        tip.textContent = text; tip.hidden = false;
+        const box = el.getBoundingClientRect();
+        let x = ev.clientX - box.left + 12; const y = Math.max(0, ev.clientY - box.top - 36);
+        if (x + tip.offsetWidth > box.width) x = Math.max(0, ev.clientX - box.left - tip.offsetWidth - 12);
+        tip.style.left = x + 'px'; tip.style.top = y + 'px';
+      },
+      hide() { tip.hidden = true; },
+    };
+  }
+  function drawPyramid(bands) {
+    const el = $('#c_pyramid'); el.querySelector('svg')?.remove();
+    const data = BANDS.map(([label], i) => ({ label, m: bands[i * 2], f: bands[i * 2 + 1] }));
+    const W = Math.max(280, el.clientWidth), H = 290, mid = 56, half = (W - mid) / 2, pad = 44;
+    const max = d3.max(data, (d) => Math.max(d.m, d.f)) || 1;
+    const x = d3.scaleLinear().domain([0, max]).range([0, half - pad]);
+    const y = d3.scaleBand().domain(data.map((d) => d.label)).range([2, H - 2]).padding(0.22);
+    const svg = d3.select(el).insert('svg', ':first-child').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Voters by age group, men left and women right');
+    const tip = tipFor(el);
+    const say = (d) => T('tipMW', d.label, fmt(d.m), fmt(d.f));
+    const g = svg.selectAll('g').data(data).join('g').attr('transform', (d) => `translate(0,${y(d.label)})`);
+    g.append('rect').attr('x', (d) => half - x(d.m)).attr('width', (d) => x(d.m)).attr('height', y.bandwidth()).attr('rx', 3).style('fill', 'var(--men)')
+      .on('mousemove', (e, d) => tip.show(e, say(d))).on('mouseleave', () => tip.hide());
+    g.append('rect').attr('x', half + mid).attr('width', (d) => x(d.f)).attr('height', y.bandwidth()).attr('rx', 3).style('fill', 'var(--women)')
+      .on('mousemove', (e, d) => tip.show(e, say(d))).on('mouseleave', () => tip.hide());
+    g.append('text').attr('x', half + mid / 2).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'middle').text((d) => d.label);
+    g.append('text').attr('x', (d) => half - x(d.m) - 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((d) => (d.m ? fmt(d.m) : ''));
+    g.append('text').attr('x', (d) => half + mid + x(d.f) + 5).attr('y', y.bandwidth() / 2).attr('dy', '0.35em').text((d) => (d.f ? fmt(d.f) : ''));
+  }
+  function drawStreets(rows) {
+    const el = $('#c_streets'); el.querySelector('svg')?.remove();
+    el.querySelector('.empty')?.remove();
+    if (!rows.length) { const p = document.createElement('p'); p.className = 'empty muted small'; p.textContent = T('noStreets'); el.prepend(p); return; }
+    const W = Math.max(280, el.clientWidth), rowH = 46, H = rows.length * rowH;
+    const x = d3.scaleLinear().domain([0, d3.max(rows, (r) => r.voters) || 1]).range([0, W - 52]);
+    const svg = d3.select(el).insert('svg', ':first-child').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Voters on the largest streets');
+    const tip = tipFor(el);
+    const say = (r) => T('tipMW', `${r.section}, ${r.boothLabel}`, fmt(r.men), fmt(r.women));
+    const g = svg.selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${i * rowH})`);
+    g.append('text').attr('y', 13).text((r) => `${r.section}, ${r.boothLabel}`).each(function () {
+      let t = this.textContent; while (this.getComputedTextLength() > W - 4 && t.length > 6) { t = t.slice(0, -2); this.textContent = t + '…'; }
+    });
+    g.append('rect').attr('y', 19).attr('height', 17).attr('width', (r) => x(r.men)).attr('rx', 3).style('fill', 'var(--men)')
+      .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    g.append('rect').attr('x', (r) => x(r.men)).attr('y', 19).attr('height', 17).attr('width', (r) => x(r.women)).attr('rx', 3).style('fill', 'var(--women)')
+      .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    g.append('text').attr('x', (r) => x(r.voters) + 6).attr('y', 32).text((r) => fmt(r.voters));
+  }
+
+  function drawSurnames(bs) {
+    const el = $('#c_surnames'); el.querySelector('svg')?.remove();
+    const ok = new Set(bs.map((b) => b.id));
+    const agg = new Map(); let named = 0;
+    const inArea = F.section ? sum(fStreets()).voters : sum(bs).voters;
+    for (const [booth, section, key, n, men, women, houses] of surnameRows) {
+      if (!ok.has(booth) || (F.section && section !== F.section)) continue;
+      named += n;
+      let a = agg.get(key);
+      if (!a) { a = { key, n: 0, men: 0, women: 0, h: 0, booths: new Set() }; agg.set(key, a); }
+      a.n += n; a.men += men; a.women += women; a.h += houses; a.booths.add(booth);
+    }
+    const rows = [...agg.values()].sort((a, b) => b.n - a.n).slice(0, 15).map((a) => ({ ...a, name: snNames.get(a.key) || a.key.toUpperCase(), b: a.booths.size }));
+    $('#surnamesNote').textContent = inArea ? T('snNote', pct(named / inArea)) : '';
+    if (!rows.length) return;
+    const W = Math.max(280, el.clientWidth), rowH = 46, H = rows.length * rowH;
+    const x = d3.scaleLinear().domain([0, rows[0].n || 1]).range([0, W - 70]);
+    const svg = d3.select(el).insert('svg', ':first-child').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+      .attr('aria-label', 'Surnames with the most voters');
+    const tip = tipFor(el);
+    const say = (r) => T('snTip', r.name, fmt(r.n), fmt(r.h), fmt(r.b));
+    const go = (r) => {
+      const q = $('#q'); q.value = r.name; query = r.name.toLowerCase(); pageOf.t_search = 0;
+      showTab('search'); window.scrollTo({ top: $('.tabs').getBoundingClientRect().top + window.scrollY });
+    };
+    const g = svg.selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${i * rowH})`)
+      .style('cursor', 'pointer').attr('tabindex', 0).attr('role', 'button').attr('aria-label', (r) => r.name)
+      .on('click', (e, r) => go(r)).on('keydown', (e, r) => { if (e.key === 'Enter') go(r); });
+    g.append('rect').attr('width', W).attr('height', rowH).style('fill', 'transparent');
+    g.append('text').attr('y', 14).style('font-size', '13px').style('fill', 'var(--ink)').style('font-weight', 600)
+      .text((r, i) => `${i + 1}. ${r.name}`)
+      .append('tspan').style('font-weight', 400).style('fill', 'var(--slate)').text((r) => '   ' + T('snHouses', fmt(r.h)));
+    g.append('rect').attr('y', 20).attr('height', 16).attr('width', (r) => x(r.men)).attr('rx', 3).style('fill', 'var(--men)')
+      .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    g.append('rect').attr('x', (r) => x(r.men)).attr('y', 20).attr('height', 16).attr('width', (r) => x(r.n - r.men)).attr('rx', 3).style('fill', 'var(--women)')
+      .on('mousemove', (e, r) => tip.show(e, say(r))).on('mouseleave', () => tip.hide());
+    g.append('text').attr('x', (r) => x(r.n) + 6).attr('y', 32).style('font-variant-numeric', 'tabular-nums').text((r) => fmt(r.n));
+  }
+  function drawVillages(bs) {
+    const el = $('#c_villages'); el.querySelector('svg')?.remove();
+    const map = new Map();
+    for (const b of bs) {
+      const k = b.ac + '|' + b.village;
+      if (!map.has(k)) map.set(k, { ac: b.ac, village: b.village, voters: 0, men: 0, women: 0, booths: 0 });
+      const v = map.get(k); v.voters += b.voters; v.men += b.men; v.women += b.women; v.booths++;
+    }
+    const all = [...map.values()].sort((a, b) => b.voters - a.voters);
+    const total = d3.sum(all, (v) => v.voters) || 1;
+    const rows = all.slice(0, 10);
+    $('#villagesNote').textContent = all.length > 10
+      ? T('villNote', fmt(all.length), pct(d3.sum(rows, (v) => v.voters) / total))
+      : '';
+    if (!rows.length) return;
+    const W = Math.max(280, el.clientWidth), rowH = 48, H = rows.length * rowH;
+    const x = d3.scaleLinear().domain([0, rows[0].voters || 1]).range([0, W - 110]);
+    const svg = d3.select(el).insert('svg', ':first-child').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+      .attr('aria-label', 'Villages with the most voters, split into men and women');
+    const tip = tipFor(el);
+    const say = (v) => T('tipVillage', v.village, fmt(v.voters), fmt(v.men), fmt(v.women), fmt(v.booths));
+    const go = (v) => setF({ ac: v.ac, mandal: '', village: v.village, booth: '', section: '' });
+    const g = svg.selectAll('g').data(rows).join('g').attr('transform', (v, i) => `translate(0,${i * rowH})`)
+      .style('cursor', 'pointer').attr('tabindex', 0).attr('role', 'button')
+      .attr('aria-label', (v) => `Show ${v.village}`)
+      .on('click', (e, v) => go(v)).on('keydown', (e, v) => { if (e.key === 'Enter') go(v); });
+    g.append('rect').attr('width', W).attr('height', rowH).style('fill', 'transparent');
+    g.append('text').attr('y', 14).style('font-size', '13px').style('fill', 'var(--ink)').style('font-weight', 600)
+      .text((v, i) => `${i + 1}. ${v.village}`)
+      .append('tspan').style('font-weight', 400).style('fill', 'var(--slate)').text((v) => '   ' + T('nBooths', fmt(v.booths)));
+    g.append('rect').attr('y', 20).attr('height', 18).attr('width', (v) => x(v.men)).attr('rx', 3).style('fill', 'var(--men)')
+      .on('mousemove', (e, v) => tip.show(e, say(v))).on('mouseleave', () => tip.hide());
+    g.append('rect').attr('x', (v) => x(v.men)).attr('y', 20).attr('height', 18).attr('width', (v) => x(v.women)).attr('rx', 3).style('fill', 'var(--women)')
+      .on('mousemove', (e, v) => tip.show(e, say(v))).on('mouseleave', () => tip.hide());
+    g.append('text').attr('x', (v) => x(v.voters) + 6).attr('y', 34).style('font-variant-numeric', 'tabular-nums')
+      .text((v) => `${fmt(v.voters)}  (${pct(v.voters / total)})`);
+  }
+
+  // ---------- tables ----------
+  function sortRows(id, rows) {
+    const s = sortState[id]; if (!s) return rows;
+    return rows.slice().sort((a, b) => {
+      const x = a[s.k], y = b[s.k];
+      return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true })) * s.d;
+    });
+  }
+  document.querySelectorAll('table').forEach((tbl) => {
+    tbl.querySelectorAll('th[data-sort]').forEach((th) => th.addEventListener('click', () => {
+      const id = tbl.id, k = th.dataset.sort, s = sortState[id];
+      const text = ['village', 'mandal', 'section', 'ac', 'boothLabel', 'part'].includes(k);
+      sortState[id] = s && s.k === k ? { k, d: -s.d } : { k, d: text ? 1 : -1 };
+      pageOf[id] = 0;
+      tbl.querySelectorAll('th[data-sort]').forEach((h) => h.setAttribute('aria-sort', h === th ? (sortState[id].d > 0 ? 'ascending' : 'descending') : 'none'));
+      renderTab();
+    }));
+  });
+  function td(tr, text, label, cls) { const c = tr.insertCell(); c.textContent = text; c.dataset.label = label; if (cls) c.className = cls; return c; }
+  function mini(c, frac) { const b = document.createElement('div'); b.className = 'mini'; b.style.width = Math.max(3, Math.round(frac * 100)) + '%'; c.appendChild(b); }
+
+  function renderVillages() {
+    const map = new Map();
+    for (const b of fBooths()) {
+      const k = b.ac + '|' + b.village;
+      if (!map.has(k)) map.set(k, { ac: b.ac, village: b.village, mandal: b.mandal, rows: [] });
+      map.get(k).rows.push(b);
+    }
+    const rows = [...map.values()].map((v) => {
+      const a = sum(v.rows);
+      return { ...v, booths: v.rows.length, voters: a.voters, ratio: a.men ? a.women / a.men * 1000 : 0, youngPct: a.young / a.voters, seniorPct: a.seniors / a.voters };
+    });
+    const max = d3.max(rows, (r) => r.voters) || 1;
+    const tb = $('#t_villages tbody'); tb.replaceChildren();
+    for (const r of sortRows('t_villages', rows)) {
+      const tr = tb.insertRow(); tr.className = 'go'; tr.tabIndex = 0;
+      const go = () => setF({ ac: r.ac, mandal: r.mandal === '–' ? '' : r.mandal, village: r.village, booth: '', section: '' });
+      tr.addEventListener('click', go); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      td(tr, r.village, 'Village', 'lead'); td(tr, r.mandal, 'Mandal', 'hide-md'); td(tr, fmt(r.booths), 'Booths', 'r');
+      mini(td(tr, fmt(r.voters), T('lblVoters'), 'r'), r.voters / max);
+      td(tr, fmt(r.ratio), 'Women per 1,000 men', 'r'); td(tr, pct(r.youngPct), T('lbl1829'), 'r'); td(tr, pct(r.seniorPct), T('lbl60'), 'r');
+    }
+  }
+  // ---------- pages of 20 rows ----------
+  const PAGE = 20;
+  const pageOf = { t_booths: 0, t_streets: 0, t_homes: 0, t_search: 0 };
+  const redraw = { t_booths: () => renderBooths(), t_streets: () => renderStreets(), t_homes: () => renderHomes(), t_search: () => renderSearch() };
+  function paginate(id, rows, noun) {
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+    pageOf[id] = Math.min(Math.max(0, pageOf[id] || 0), pages - 1);
+    const from = pageOf[id] * PAGE;
+    const pg = document.querySelector(`.pager[data-pager="${id}"]`);
+    if (pg) {
+      pg.hidden = pages <= 1;
+      pg.querySelector('.pager-info').textContent =
+        T('pager', fmt(from + 1), fmt(Math.min(from + PAGE, rows.length)), fmt(rows.length), T(noun), pageOf[id] + 1, fmt(pages));
+      pg.querySelector('[data-step="-1"]').disabled = pageOf[id] === 0;
+      pg.querySelector('[data-step="1"]').disabled = pageOf[id] >= pages - 1;
+    }
+    return rows.slice(from, from + PAGE);
+  }
+  document.querySelectorAll('.pager').forEach((pg) => {
+    const id = pg.dataset.pager;
+    pg.querySelectorAll('button[data-step]').forEach((b) => b.addEventListener('click', () => {
+      pageOf[id] += Number(b.dataset.step); redraw[id]();
+      const box = pg.closest('.box');
+      if (box && box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: 'start' });
+    }));
+  });
+
+  function renderBooths() {
+    const rows = fBooths().map((b) => ({ ...b, ratio: b.men ? b.women / b.men * 1000 : 0, youngPct: b.young / b.voters, seniorPct: b.seniors / b.voters }));
+    const max = d3.max(rows, (r) => r.voters) || 1;
+    const tb = $('#t_booths tbody'); tb.replaceChildren();
+    for (const r of paginate('t_booths', sortRows('t_booths', rows), 'nounBooths')) {
+      const tr = tb.insertRow(); tr.className = 'go'; tr.tabIndex = 0;
+      const go = () => { Object.assign(F, { ac: r.ac, mandal: r.mandal === '–' ? '' : r.mandal, village: r.village, booth: r.id, section: '' }); renderFilters(); renderScope(); showTab('streets'); };
+      tr.addEventListener('click', go); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      td(tr, T('part', r.part), T('lblBooth'), 'lead'); td(tr, r.village, T('lblVillage')); td(tr, r.ac, T('lblConst'), 'hide-md');
+      mini(td(tr, fmt(r.voters), T('lblVoters'), 'r'), r.voters / max);
+      td(tr, fmt(r.houses), T('lblHouseholds'), 'r hide-md'); td(tr, fmt(r.ratio), T('lblRatio'), 'r');
+      td(tr, pct(r.youngPct), T('lbl1829'), 'r'); td(tr, pct(r.seniorPct), T('lbl60'), 'r');
+    }
+  }
+  function renderStreets() {
+    const rows = fStreets().map((s) => ({ ...s, womenPct: s.women / s.voters }));
+    const tb = $('#t_streets tbody'); tb.replaceChildren();
+    for (const r of paginate('t_streets', sortRows('t_streets', rows), 'nounStreets')) {
+      const tr = tb.insertRow(); tr.className = 'go'; tr.tabIndex = 0;
+      const go = () => setF({ ac: r.ac, mandal: r.mandal === '–' ? '' : r.mandal, village: r.village, booth: r.booth, section: r.section });
+      tr.addEventListener('click', go); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      td(tr, r.section, T('lblStreet'), 'lead'); td(tr, r.boothLabel, T('lblBooth'));
+      td(tr, fmt(r.voters), T('lblVoters'), 'r'); td(tr, fmt(r.houses), T('lblHouses'), 'r'); td(tr, pct(r.womenPct), T('lblWomen'), 'r');
+      td(tr, fmt(r.young), T('lbl1829'), 'r'); td(tr, fmt(r.seniors), T('lbl60'), 'r');
+    }
+    $('#streetsNote').textContent = rows.length <= PAGE ? T('streetsCount', fmt(rows.length)) : '';
+  }
+  function renderHomes() {
+    const hs = fBooths().flatMap((b) => homesByBooth.get(b.id) || [])
+      .filter((h) => !F.section || h.sections.split(' / ').includes(F.section)).sort((a, b) => b.n - a.n);
+    const tb = $('#t_homes tbody'); tb.replaceChildren();
+    for (const h of paginate('t_homes', hs, 'nounHomes')) {
+      const tr = tb.insertRow();
+      td(tr, h.house, T('lblHouse'), 'lead'); td(tr, h.label, T('lblBooth')); td(tr, fmt(h.n), T('lblVoters'), 'r');
+      td(tr, h.sections, T('lblStreet'));
+      const cell = td(tr, '', T('lblMembers'), 'wide');
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'mbtn'; btn.setAttribute('aria-expanded', 'false');
+      const label = () => (btn.getAttribute('aria-expanded') === 'true' ? T('hideMembers') : T('seeMembers', h.n));
+      btn.textContent = label();
+      cell.appendChild(btn);
+      let detail = null;
+      btn.addEventListener('click', async () => {
+        const open = btn.getAttribute('aria-expanded') !== 'true';
+        btn.setAttribute('aria-expanded', open); btn.textContent = label();
+        if (!open) { detail?.remove(); detail = null; return; }
+        detail = document.createElement('tr'); detail.className = 'mrow';
+        const c = detail.insertCell(); c.colSpan = 5;
+        tr.after(detail);
+        if (!h.members) {
+          const p = document.createElement('p'); p.className = 'note'; p.textContent = T('loadingMembers'); c.appendChild(p);
+          try {
+            h.members = await rpc('house_members', { p_booth: h.booth, p_house: h.house });
+          } catch (e) { p.textContent = e.asleep ? T('asleep') : T('membersFail'); return; }
+          c.replaceChildren();
+        }
+        if (detail) c.appendChild(memberList(h.members));
+      });
+    }
+    $('#homesNote').textContent = T('homesNote');
+  }
+  function memberList(members) {
+    const box = document.createElement('div'); box.className = 'mlist';
+    const add = (text, cls) => { const d = document.createElement('div'); d.className = cls; d.textContent = text; box.appendChild(d); };
+    [T('mName'), T('mAge'), T('mGender'), T('mRelative'), 'EPIC', T('mSerial')].forEach((hd, i) => add(hd, 'mh' + ['', ' ma', ' mg', ' mr', ' me', ' ms'][i]));
+    const relWord = { father: T('Father'), husband: T('Husband'), mother: T('Mother'), wife: T('Wife') };
+    const phone = window.matchMedia('(max-width: 640px)').matches;
+    [...members].sort((a, b) => (parseInt(a.serial, 10) || 0) - (parseInt(b.serial, 10) || 0)).forEach((m) => {
+      const gender = gWord(m.g);
+      const rel = m.relative ? `${relWord[String(m.rt || '').toLowerCase()] || T('mRelative')}: ${m.relative}` : '–';
+      add(m.name, 'mn');
+      add(phone ? `${m.age || '–'}, ${gender}` : String(m.age || '–'), 'ma');
+      add(gender, 'mg');
+      add(rel, 'mr');
+      add(phone ? `EPIC ${m.epic || '–'}${m.serial ? ', ' + T('serialWord') + ' ' + m.serial : ''}` : (m.epic || '–'), 'me');
+      add(m.serial || '–', 'ms');
+    });
+    return box;
+  }
+  let searchState = { key: '', total: 0, rows: [] }, searchSeq = 0;
+  async function renderSearch() {
+    const tb = $('#t_search tbody');
+    const pg = document.querySelector('.pager[data-pager="t_search"]');
+    if (query.length < 3) {
+      tb.replaceChildren(); pg.hidden = true;
+      $('#searchNote').textContent = T('typeToSearch'); return;
+    }
+    const key = JSON.stringify([query, F.ac, F.mandal, F.village, F.booth, F.section]);
+    if (searchState.key !== key) {
+      const seq = ++searchSeq;
+      tb.replaceChildren(); pg.hidden = true;
+      $('#searchNote').textContent = T('searching');
+      const btn = $('#searchForm button'); btn.disabled = true;
+      let d;
+      try {
+        d = await rpc('search_voters', { q: query, p_ac: F.ac, p_mandal: F.mandal, p_village: F.village, p_booth: F.booth, p_section: F.section });
+      } catch (e) {
+        if (seq === searchSeq) { $('#searchNote').textContent = e.asleep ? T('asleep') : T('searchFail'); btn.disabled = false; }
+        return;
+      }
+      btn.disabled = false;
+      if (seq !== searchSeq) return;   // a newer search has started
+      searchState = { key, total: d.total, rows: d.rows };
+      pageOf.t_search = 0;
+    }
+    const { total, rows } = searchState;
+    $('#searchNote').textContent = rows.length < total ? T('first200', fmt(rows.length), fmt(total)) : T('found', fmt(total));
+    tb.replaceChildren();
+    for (const v of paginate('t_search', rows, 'nounVoters')) {
+      const b = boothById.get(v.booth);
+      const tr = tb.insertRow();
+      td(tr, v.name, T('mName'), 'lead'); td(tr, v.epic, 'EPIC'); td(tr, v.relative, T('mRelative')); td(tr, v.house, T('lblHouse'));
+      td(tr, v.age || '', T('mAge'), 'r'); td(tr, gWord(v.g), T('mGender'));
+      td(tr, b ? b.label : v.booth, T('lblBooth')); td(tr, v.serial, T('mSerial'), 'r'); td(tr, v.section, T('lblStreet'), 'wide');
+    }
+  }
+  $('#searchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearTimeout(qTimer);
+    query = $('#q').value.trim().toLowerCase();
+    pageOf.t_search = 0;
+    $('#q').blur();   // closes the phone keyboard so results are visible
+    renderSearch();
+  });
+  // results update while typing (a short pause after the last key)
+  let qTimer;
+  $('#q').addEventListener('input', () => {
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => { query = $('#q').value.trim().toLowerCase(); pageOf.t_search = 0; renderSearch(); }, 350);
+  });
+
+  // redraw charts when the width changes
+  let rTimer;
+  new ResizeObserver(() => { clearTimeout(rTimer); rTimer = setTimeout(() => { if (tab === 'overview' && booths.length) renderOverview(); }, 120); }).observe($('#c_pyramid'));
+
+  // ---------- start ----------
+  const summaryText = () => {
+    const d = UPDATED ? new Date(UPDATED) : null;
+    return T('dataSummary', fmt(TOTAL), d ? d.toLocaleDateString(LANG === 'te' ? 'te-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+  };
+  function start() {
+    $('#loading').hidden = true; $('#app').hidden = false; $('#fileInfo').hidden = false;
+    $('#fileSummary').textContent = summaryText();
+    renderFilters(); renderScope();
+    if (window.matchMedia('(max-width: 640px)').matches) $('#fbox').open = false;
+    showTab(location.hash.slice(1) || 'overview', true);
+  }
+
+  function relabel() {
+    booths.forEach((b) => { b.label = partLabel(b.part, b.village); });
+    const byId = new Map(booths.map((b) => [b.id, b]));
+    streets.forEach((s2) => { s2.boothLabel = byId.get(s2.booth).label; });
+    homesByBooth.forEach((list, k) => list.forEach((h) => { h.label = byId.get(k).label; }));
+  }
+  function setLang(l) {
+    LANG = l === 'te' ? 'te' : 'en';
+    try { localStorage.setItem('vi-lang', LANG); } catch (e) { /* ignore */ }
+    applyStatic();
+    if (booths.length) {
+      relabel();
+      $('#fileSummary').textContent = summaryText();
+      renderAll();
+    }
+  }
+  document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  applyStatic();
+  load();
+})();
+</script>
+</body>
+</html>
