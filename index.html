@@ -547,7 +547,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       prev: 'Previous', next: 'Next',
       footer: 'Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.',
       selConst: 'Select constituency', selMandal: 'Select mandal', selVillage: 'Select village', selBooth: 'Select booth', selStreet: 'Select street',
-      createdBy: 'Created by', tabInsights: 'Insights',
+      createdBy: 'Created by', tabInsights: 'Insights', nameUnreadable: '(Name not readable on the roll)',
       cmpAc: 'Constituencies compared', cmpMandal: 'Mandals compared', cmpVillage: 'Villages compared',
       cmpSub: 'Side by side. Tap a row to open it.', thPerHouse: 'Voters per house',
       rankTitle: 'Booth rankings', rankSub: 'The top 5 booths for each measure in the area you picked. Tap a booth to open it.',
@@ -630,7 +630,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       prev: 'వెనుకకు', next: 'తరువాత',
       footer: 'గణాంకాలు 2026 ప్రత్యేక సమగ్ర సవరణ (SIR) ముసాయిదా ఓటర్ల జాబితాల నుండి తీసుకున్నవి. స్కాన్ చేసిన PDFల నుండి చదివినందున కొన్ని పేర్లలో చిన్న అక్షర తేడాలు ఉండవచ్చు. ఒక బూత్‌లోని వేర్వేరు ఇంటి నంబర్లను కుటుంబాలుగా లెక్కించాం. వయస్సులు 01-07-2026 నాటికి జాబితాలో ఉన్నట్లు.',
       selConst: 'నియోజకవర్గం ఎంచుకోండి', selMandal: 'మండలం ఎంచుకోండి', selVillage: 'గ్రామం ఎంచుకోండి', selBooth: 'బూత్ ఎంచుకోండి', selStreet: 'వీధి ఎంచుకోండి',
-      createdBy: 'రూపొందించినవారు', tabInsights: 'విశ్లేషణలు',
+      createdBy: 'రూపొందించినవారు', tabInsights: 'విశ్లేషణలు', nameUnreadable: '(జాబితాలో పేరు స్పష్టంగా లేదు)',
       cmpAc: 'నియోజకవర్గాల పోలిక', cmpMandal: 'మండలాల పోలిక', cmpVillage: 'గ్రామాల పోలిక',
       cmpSub: 'పక్కపక్కనే పోలిక. ఒక వరుసను నొక్కితే అది తెరుచుకుంటుంది.', thPerHouse: 'ఒక్కో ఇంటికి ఓటర్లు',
       rankTitle: 'బూత్‌ల ర్యాంకులు', rankSub: 'మీరు ఎంచుకున్న ప్రాంతంలో ప్రతి అంశంలో మొదటి 5 బూత్‌లు. బూత్‌ను నొక్కితే అది తెరుచుకుంటుంది.',
@@ -732,6 +732,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     }
     return out.replace(/a+vu\b/g, 'ao');   // రావు is written Rao on the roll
   }
+  const nameOf = (n) => (n === '(Name not readable)' ? T('nameUnreadable') : n);
   async function rpc(fn, body) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
     if (SB_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SB_KEY;   // older "anon" keys
@@ -1311,7 +1312,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     [...members].sort((a, b) => (parseInt(a.serial, 10) || 0) - (parseInt(b.serial, 10) || 0)).forEach((m) => {
       const gender = gWord(m.g);
       const rel = m.relative ? `${relWord[String(m.rt || '').toLowerCase()] || T('mRelative')}: ${m.relative}` : '–';
-      add(m.name, 'mn');
+      add(nameOf(m.name), 'mn');
       add(phone ? `${m.age || '–'}, ${gender}` : String(m.age || '–'), 'ma');
       add(gender, 'mg');
       add(rel, 'mr');
@@ -1356,7 +1357,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     for (const v of paginate('t_search', rows, 'nounVoters')) {
       const b = boothById.get(v.booth);
       const tr = tb.insertRow();
-      td(tr, v.name, T('mName'), 'lead'); td(tr, v.epic, 'EPIC'); td(tr, v.relative, T('mRelative')); td(tr, v.house, T('lblHouse'));
+      td(tr, nameOf(v.name), T('mName'), 'lead'); td(tr, v.epic, 'EPIC'); td(tr, v.relative, T('mRelative')); td(tr, v.house, T('lblHouse'));
       td(tr, v.age || '', T('mAge'), 'r'); td(tr, gWord(v.g), T('mGender'));
       td(tr, b ? b.label : v.booth, T('lblBooth')); td(tr, v.serial, T('mSerial'), 'r'); td(tr, v.section, T('lblStreet'), 'wide');
     }
