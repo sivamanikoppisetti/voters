@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Voter Insights | KoLogs</title>
-<link rel="icon" href="kologs-logo.png">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23ffffff%27/%3E%3Cpath d=%27M15 15 L32 50 L49 15%27 fill=%27none%27 stroke=%27%23028136%27 stroke-width=%2711%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
 <script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,12 +111,16 @@ button, input, select { font: inherit; color: inherit; }
 .tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 14px 9px; font-size: 16px; color: var(--slate); white-space: nowrap; cursor: pointer; min-height: 48px; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brand); font-weight: 600; }
 .tabs { align-items: center; }
-.tab[data-tab="search"] { margin: 5px 6px 5px auto; align-self: center; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: #028136; color: #FFFFFF; font-weight: 600; box-shadow: 0 2px 8px rgba(2, 129, 54, .28); }
+.tab[data-tab="search"] { margin: 5px 6px 5px 8px; align-self: center; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: #028136; color: #FFFFFF; font-weight: 600; box-shadow: 0 2px 8px rgba(2, 129, 54, .28); }
 .tab[data-tab="search"]::before { content: ""; width: 16px; height: 16px; flex: none; background: no-repeat center / 16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E"); }
 .tab[data-tab="search"]:hover { background: #026B2D; }
+.tabs-more { display: none; position: sticky; right: 0; margin-left: auto; flex: none; align-self: stretch; border: 0; padding: 0 8px 0 26px; font-size: 30px; line-height: 1; font-weight: 600; color: var(--brand); cursor: pointer; background: linear-gradient(to right, rgba(247, 240, 225, 0), var(--paper) 45%); animation: nudge 1.6s ease-in-out infinite; }
+.tabs.has-more .tabs-more { display: block; }
+@keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .tabs-more { animation: none; } }
 .tab[data-tab="search"][aria-selected="true"] { background: #026B2D; color: #FFFFFF; box-shadow: 0 0 0 3px var(--brand-soft); }
 @media (max-width: 640px) {
-  .tab[data-tab="search"] { order: -1; margin: 5px 6px 5px 2px; padding: 0 14px; min-height: 38px; font-size: 15px; }
+  .tab[data-tab="search"] { margin: 5px 4px 5px 6px; padding: 0 14px; min-height: 38px; font-size: 15px; }
 }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
 
@@ -128,6 +132,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .hero-num + .hero-text { padding-bottom: 6px; }
 .hero-text { font-size: 18px; max-width: 52ch; margin: 0; }
 .hero-text b { font-weight: 600; }
+.hero-word { display: inline-block; font-weight: 700; color: var(--brand); background: var(--brand-soft); padding: 0 .35em; border-radius: 8px; margin-right: .1em; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; min-width: 0; }
 .stat-label { font-size: 14px; color: var(--slate); }
@@ -138,6 +143,16 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .box > p { margin: 2px 0 0; font-size: 14px; color: var(--slate); }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; margin-top: 14px; }
+.ranks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 14px; }
+.rank { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--paper); min-width: 0; }
+.rank h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+.rank ol { margin: 0; padding: 0; list-style: none; counter-reset: r; }
+.rank li { counter-increment: r; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; padding: 7px 4px; border-top: 1px solid var(--line); cursor: pointer; font-size: 14px; line-height: 1.35; border-radius: 6px; }
+.rank li:first-child { border-top: 0; }
+.rank li:hover { background: var(--brand-soft); }
+.rank li::before { content: counter(r); grid-row: 1 / span 2; align-self: start; margin-top: 1px; width: 20px; height: 20px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.rank .rn { grid-column: 2; overflow-wrap: break-word; font-weight: 500; }
+.rank .rv { grid-column: 2; color: var(--slate); font-variant-numeric: tabular-nums; font-size: 13px; }
 .focus-item { border-left: 3px solid var(--brand); padding: 2px 0 2px 12px; min-width: 0; overflow-wrap: anywhere; }
 .focus-item .k { font-size: 13px; color: var(--slate); }
 .focus-item .v { font-weight: 600; }
@@ -176,6 +191,22 @@ tr.mrow > td { padding: 0 10px 14px; background: var(--brand-soft); }
 .search-btn { min-height: 48px; padding: 0 22px; flex: none; }
 .search { box-sizing: border-box; width: 100%; max-width: 520px; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); padding: 0 14px; font-size: 16px; margin-top: 12px; }
 
+.credit { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; justify-content: center;
+  max-width: calc(100% - 24px); padding: 7px 16px; border-radius: 999px; font-size: 13px; color: var(--ink);
+  background: rgba(255, 253, 248, 0.55); -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+  border: 1px solid rgba(2, 129, 54, 0.28); box-shadow: 0 6px 24px rgba(18, 18, 18, 0.12); }
+.credit b { font-weight: 700; }
+.credit a { color: var(--brand); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.credit a:hover { text-decoration: underline; }
+.credit a::before { content: ""; display: inline-block; width: 1px; height: 12px; background: rgba(2, 129, 54, 0.35); margin-right: 14px; vertical-align: -1px; }
+.wrap { padding-bottom: 96px !important; }
+@media (max-width: 640px) {
+  .credit { font-size: 11.5px; padding: 6px 12px; gap: 2px 10px; border-radius: 16px; width: max-content; }
+  .credit a::before { margin-right: 10px; }
+  .wrap { padding-bottom: 110px !important; }
+}
+@media print { .credit { position: static; transform: none; margin: 20px auto; } }
 footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch; }
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 .pager-info { font-size: 14px; color: var(--slate); font-variant-numeric: tabular-nums; }
@@ -196,7 +227,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
 @media (max-width: 640px) {
   .intro { grid-template-columns: minmax(0, 1fr); }
   .fbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
-  .fbox > .fsum { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; cursor: pointer; list-style: none; }
+  .fbox > .fsum { display: none; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; cursor: pointer; list-style: none; }
   .fbox > .fsum::-webkit-details-marker { display: none; }
   .fsum-k { font-weight: 600; }
   .fsum-k::after { content: " ▾"; color: var(--slate); font-weight: 400; }
@@ -286,10 +317,12 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
 
     <nav class="tabs" role="tablist" aria-label="Views">
       <button class="tab" role="tab" data-tab="overview" type="button" data-t="tabOverview">Overview</button>
+      <button class="tab" role="tab" data-tab="insights" type="button" data-t="tabInsights">Insights</button>
       <button class="tab" role="tab" data-tab="booths" type="button" data-t="tabBooths">Booths</button>
       <button class="tab" role="tab" data-tab="streets" type="button" data-t="tabStreets">Streets</button>
       <button class="tab" role="tab" data-tab="homes" type="button" data-t="tabHomes">Households</button>
       <button class="tab" role="tab" data-tab="search" type="button" data-t="tabSearch">Find a voter</button>
+      <button class="tabs-more" id="tabsMore" type="button" aria-label="More pages" tabindex="-1">›</button>
     </nav>
 
     <!-- overview -->
@@ -304,11 +337,6 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
         <div class="stat"><div class="stat-label" data-t="statHouses">Households</div><div class="stat-num" id="s_houses"></div><div class="stat-sub" id="s_houses_sub"></div></div>
         <div class="stat"><div class="stat-label" data-t="statYoung">Young voters, 18 to 29</div><div class="stat-num" id="s_young"></div><div class="stat-sub" id="s_young_sub"></div></div>
         <div class="stat"><div class="stat-label" data-t="statOld">Seniors, 60 and over</div><div class="stat-num" id="s_old"></div><div class="stat-sub" id="s_old_sub"></div></div>
-      </div>
-      <div class="box">
-        <h2 data-t="focusTitle">Where to focus</h2>
-        <p data-t="focusSub">What stands out in the area you picked.</p>
-        <div class="focus" id="focus"></div>
       </div>
       <div class="box" id="topVillages">
         <h2 data-t="villTitle">Villages with the most voters</h2>
@@ -341,6 +369,32 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     </section>
 
     <!-- booths -->
+    <section class="panel" id="insights" role="tabpanel" hidden>
+      <p class="scope scope-copy"></p>
+      <div class="box">
+        <h2 data-t="focusTitle">Where to focus</h2>
+        <p data-t="focusSub">What stands out in the area you picked.</p>
+        <div class="focus" id="focus"></div>
+      </div>
+      <div class="box" id="compareBox">
+        <h2 id="cmpTitle"></h2>
+        <p data-t="cmpSub">Side by side. Tap a row to open it.</p>
+        <div class="table-wrap"><table id="t_compare">
+          <thead><tr>
+            <th id="cmpName"></th><th class="r" data-t="lblBooths">Booths</th><th class="r" data-t="thVoters">Voters</th>
+            <th class="r" data-t="thRatio">Women per 1,000 men</th><th class="r" data-t="th1829">18 to 29</th><th class="r">60+</th>
+            <th class="r" data-t="thPerHouse">Voters per house</th>
+          </tr></thead><tbody></tbody>
+        </table></div>
+      </div>
+      <div class="box">
+        <h2 data-t="rankTitle">Booth rankings</h2>
+        <p data-t="rankSub">The top 5 booths for each measure in the area you picked. Tap a booth to open it.</p>
+        <p class="note" id="rankNote" hidden></p>
+        <div class="ranks" id="ranks"></div>
+      </div>
+    </section>
+
     <section class="panel" id="booths" role="tabpanel" hidden>
       <div class="box">
         <h2 data-t="boothsTitle">Booths</h2>
@@ -431,8 +485,13 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       </div>
     </section>
 
-    <footer data-t="footer">Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.</footer>
+    <footer class="note-foot" data-t="footer">Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.</footer>
   </div>
+</div>
+<div class="credit" role="contentinfo">
+  <span class="credit-by"><span data-t="createdBy">Created by</span> <b>Sivamani Koppisetti</b></span>
+  <a href="mailto:admin@kologs.com">admin@kologs.com</a>
+  <a href="tel:+918688196857">8688196857</a>
 </div>
 
 <script>
@@ -476,9 +535,20 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       th1829: '18 to 29', thStreet: 'Street / section', thHouses: 'Houses', thHouseNo: 'House no.', thMembers: 'Members', thHouse: 'House',
       prev: 'Previous', next: 'Next',
       footer: 'Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.',
+      selConst: 'Select constituency', selMandal: 'Select mandal', selVillage: 'Select village', selBooth: 'Select booth', selStreet: 'Select street',
+      createdBy: 'Created by', tabInsights: 'Insights',
+      cmpAc: 'Constituencies compared', cmpMandal: 'Mandals compared', cmpVillage: 'Villages compared',
+      cmpSub: 'Side by side. Tap a row to open it.', thPerHouse: 'Voters per house',
+      rankTitle: 'Booth rankings', rankSub: 'The top 5 booths for each measure in the area you picked. Tap a booth to open it.',
+      rankNeedMore: 'Pick a wider area (a village, mandal or constituency) to compare booths.',
+      rkLargest: 'Largest booths', rkSmallest: 'Smallest booths', rkFirst: 'Most new voters (18 to 21)',
+      rkYoung: 'Youngest booths', rkSenior: 'Oldest booths', rkOld: 'Most voters aged 75+ (may need help to vote)',
+      rkHighRatio: 'Most women per 1,000 men', rkLowRatio: 'Fewest women per 1,000 men', rkCrowded: 'Most voters per house',
+      rkStreetFirst: 'Streets with the most new voters',
+      nFirst: (n) => `${n} aged 18 to 21`, pctSenior: (p) => `${p} aged 60+`, nOld75: (n) => `${n} aged 75+`,
       allConst: 'All constituencies', allMandals: 'All mandals', allVillages: 'All villages', allBooths: 'All booths', allStreets: 'All streets',
       mandalOf: (m) => `${m} mandal`, part: (n) => `Part ${n}`,
-      hero: (h, b, v, m, w) => [['voters in '], [h, 1], [' households, across '], [b, 1], [' booths in '], [v, 1], [' villages. '], [m, 1], [' men and '], [w, 1], [' women.']],
+      hero: (h, b, v, m, w) => [['voters', 2], [' in '], [h, 1], [' households, across '], [b, 1], [' booths in '], [v, 1], [' villages. '], [m, 1], [' men and '], [w, 1], [' women.']],
       womenShare: (p) => `Women are ${p} of voters`, perHouse: (x) => `${x} voters per house`,
       firstTime: (n) => `${n} are 18 to 21, new to voting`, veryOld: (n) => `${n} are 75+ and may need help to vote`,
       fStreetMost: 'Street with most voters', fYoung: 'Most young voters', fSenior: 'Most seniors', fHouse: 'Biggest household',
@@ -545,9 +615,20 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       th1829: '18–29', thStreet: 'వీధి / విభాగం', thHouses: 'ఇళ్లు', thHouseNo: 'ఇంటి నం.', thMembers: 'సభ్యులు', thHouse: 'ఇల్లు',
       prev: 'వెనుకకు', next: 'తరువాత',
       footer: 'గణాంకాలు 2026 ప్రత్యేక సమగ్ర సవరణ (SIR) ముసాయిదా ఓటర్ల జాబితాల నుండి తీసుకున్నవి. స్కాన్ చేసిన PDFల నుండి చదివినందున కొన్ని పేర్లలో చిన్న అక్షర తేడాలు ఉండవచ్చు. ఒక బూత్‌లోని వేర్వేరు ఇంటి నంబర్లను కుటుంబాలుగా లెక్కించాం. వయస్సులు 01-07-2026 నాటికి జాబితాలో ఉన్నట్లు.',
+      selConst: 'నియోజకవర్గం ఎంచుకోండి', selMandal: 'మండలం ఎంచుకోండి', selVillage: 'గ్రామం ఎంచుకోండి', selBooth: 'బూత్ ఎంచుకోండి', selStreet: 'వీధి ఎంచుకోండి',
+      createdBy: 'రూపొందించినవారు', tabInsights: 'విశ్లేషణలు',
+      cmpAc: 'నియోజకవర్గాల పోలిక', cmpMandal: 'మండలాల పోలిక', cmpVillage: 'గ్రామాల పోలిక',
+      cmpSub: 'పక్కపక్కనే పోలిక. ఒక వరుసను నొక్కితే అది తెరుచుకుంటుంది.', thPerHouse: 'ఒక్కో ఇంటికి ఓటర్లు',
+      rankTitle: 'బూత్‌ల ర్యాంకులు', rankSub: 'మీరు ఎంచుకున్న ప్రాంతంలో ప్రతి అంశంలో మొదటి 5 బూత్‌లు. బూత్‌ను నొక్కితే అది తెరుచుకుంటుంది.',
+      rankNeedMore: 'బూత్‌లను పోల్చడానికి పెద్ద ప్రాంతం (గ్రామం, మండలం లేదా నియోజకవర్గం) ఎంచుకోండి.',
+      rkLargest: 'పెద్ద బూత్‌లు', rkSmallest: 'చిన్న బూత్‌లు', rkFirst: 'ఎక్కువ కొత్త ఓటర్లు (18–21)',
+      rkYoung: 'యువత ఎక్కువ ఉన్న బూత్‌లు', rkSenior: 'వృద్ధులు ఎక్కువ ఉన్న బూత్‌లు', rkOld: '75+ ఏళ్ల ఓటర్లు ఎక్కువ (సహాయం అవసరం కావచ్చు)',
+      rkHighRatio: '1,000 పురుషులకు ఎక్కువ మహిళలు', rkLowRatio: '1,000 పురుషులకు తక్కువ మహిళలు', rkCrowded: 'ఒక్కో ఇంటికి ఎక్కువ ఓటర్లు',
+      rkStreetFirst: 'కొత్త ఓటర్లు ఎక్కువ ఉన్న వీధులు',
+      nFirst: (n) => `${n} మంది 18–21 ఏళ్లవారు`, pctSenior: (p) => `${p} మంది 60+ ఏళ్లవారు`, nOld75: (n) => `${n} మంది 75+ ఏళ్లవారు`,
       allConst: 'అన్ని నియోజకవర్గాలు', allMandals: 'అన్ని మండలాలు', allVillages: 'అన్ని గ్రామాలు', allBooths: 'అన్ని బూత్‌లు', allStreets: 'అన్ని వీధులు',
       mandalOf: (m) => `${m} మండలం`, part: (n) => `భాగం ${n}`,
-      hero: (h, b, v, m, w) => [['మంది ఓటర్లు, '], [h, 1], [' కుటుంబాలు, '], [b, 1], [' బూత్‌లు, '], [v, 1], [' గ్రామాలు. '], [m, 1], [' పురుషులు, '], [w, 1], [' మహిళలు.']],
+      hero: (h, b, v, m, w) => [['మంది ఓటర్లు', 2], [', '], [h, 1], [' కుటుంబాలు, '], [b, 1], [' బూత్‌లు, '], [v, 1], [' గ్రామాలు. '], [m, 1], [' పురుషులు, '], [w, 1], [' మహిళలు.']],
       womenShare: (p) => `ఓటర్లలో ${p} మహిళలు`, perHouse: (x) => `ఒక్కో ఇంటికి ${x} ఓటర్లు`,
       firstTime: (n) => `${n} మంది 18–21 ఏళ్లవారు, కొత్త ఓటర్లు`, veryOld: (n) => `${n} మంది 75+ ఏళ్లవారు, ఓటు వేయడానికి సహాయం అవసరం కావచ్చు`,
       fStreetMost: 'ఎక్కువ ఓటర్లు ఉన్న వీధి', fYoung: 'ఎక్కువ యువ ఓటర్లు', fSenior: 'ఎక్కువ వృద్ధులు', fHouse: 'పెద్ద కుటుంబం',
@@ -675,21 +756,25 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
 
   // ---------- filter controls ----------
   const uniq = (a) => [...new Set(a)].filter(Boolean).sort((x, y) => String(x).localeCompare(String(y), undefined, { numeric: true }));
-  function fillSelect(sel, all, items, value) {
-    sel.replaceChildren(new Option(all, ''), ...items.map(([v, label]) => new Option(label, v)));
-    sel.value = items.some(([v]) => v === value) ? value : '';
-    return sel.value;
+  const ALL = '*all*';   // the "All …" choice inside each list
+  function fillSelect(sel, pick, all, items, value) {
+    const prompt = new Option(pick, ''); prompt.disabled = true; prompt.hidden = true;   // shown when nothing is picked
+    sel.replaceChildren(prompt, new Option(all, ALL), ...items.map(([v, label]) => new Option(label, v)));
+    if (items.some(([v]) => v === value)) { sel.value = value; return value; }
+    sel.selectedIndex = 0;
+    return '';
   }
+  const pickVal = (v) => (v === ALL ? '' : v);
   function renderFilters() {
-    F.ac = fillSelect($('#f_ac'), T('allConst'), uniq(booths.map((b) => b.ac)).map((x) => [x, x]), F.ac);
+    F.ac = fillSelect($('#f_ac'), T('selConst'), T('allConst'), uniq(booths.map((b) => b.ac)).map((x) => [x, x]), F.ac);
     const b1 = booths.filter((b) => !F.ac || b.ac === F.ac);
-    F.mandal = fillSelect($('#f_mandal'), T('allMandals'), uniq(b1.map((b) => b.mandal)).map((x) => [x, x]), F.mandal);
+    F.mandal = fillSelect($('#f_mandal'), T('selMandal'), T('allMandals'), uniq(b1.map((b) => b.mandal)).map((x) => [x, x]), F.mandal);
     const b2 = b1.filter((b) => !F.mandal || b.mandal === F.mandal);
-    F.village = fillSelect($('#f_village'), T('allVillages'), uniq(b2.map((b) => b.village)).map((x) => [x, x]), F.village);
+    F.village = fillSelect($('#f_village'), T('selVillage'), T('allVillages'), uniq(b2.map((b) => b.village)).map((x) => [x, x]), F.village);
     const b3 = b2.filter((b) => !F.village || b.village === F.village).sort((a, b) => a.ac.localeCompare(b.ac) || a.part - b.part);
-    F.booth = fillSelect($('#f_booth'), T('allBooths'), b3.map((b) => [b.id, b.label]), F.booth);
+    F.booth = fillSelect($('#f_booth'), T('selBooth'), T('allBooths'), b3.map((b) => [b.id, b.label]), F.booth);
     const secs = streets.filter((s) => inF(s, false));
-    F.section = fillSelect($('#f_section'), T('allStreets'), uniq(secs.map((s) => s.section)).map((x) => [x, x]), F.section);
+    F.section = fillSelect($('#f_section'), T('selStreet'), T('allStreets'), uniq(secs.map((s) => s.section)).map((x) => [x, x]), F.section);
     $('#f_section').disabled = !F.booth && !F.village && secs.length > 400;
     // highlight what is filtered, and the way back to everything
     const active = ['ac', 'mandal', 'village', 'booth', 'section'].filter((k) => F[k]);
@@ -698,15 +783,33 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     const n = $('#fsumN'); if (n) { n.textContent = active.length; n.classList.toggle('on', active.length > 0); }
   }
   const setF = (patch) => { Object.assign(F, patch); Object.keys(pageOf).forEach((k) => { pageOf[k] = 0; }); renderAll(); };
-  $('#f_ac').addEventListener('change', (e) => setF({ ac: e.target.value, mandal: '', village: '', booth: '', section: '' }));
-  $('#f_mandal').addEventListener('change', (e) => setF({ mandal: e.target.value, village: '', booth: '', section: '' }));
-  $('#f_village').addEventListener('change', (e) => setF({ village: e.target.value, booth: '', section: '' }));
-  $('#f_booth').addEventListener('change', (e) => setF({ booth: e.target.value, section: '' }));
-  $('#f_section').addEventListener('change', (e) => setF({ section: e.target.value }));
-  $('#clearFilters').addEventListener('click', () => setF({ ac: '', mandal: '', village: '', booth: '', section: '' }));
+  $('#f_ac').addEventListener('change', (e) => setF({ ac: pickVal(e.target.value), mandal: '', village: '', booth: '', section: '' }));
+  $('#f_mandal').addEventListener('change', (e) => setF({ mandal: pickVal(e.target.value), village: '', booth: '', section: '' }));
+  $('#f_village').addEventListener('change', (e) => setF({ village: pickVal(e.target.value), booth: '', section: '' }));
+  $('#f_booth').addEventListener('change', (e) => setF({ booth: pickVal(e.target.value), section: '' }));
+  $('#f_section').addEventListener('change', (e) => setF({ section: pickVal(e.target.value) }));
+  $('#clearFilters').addEventListener('click', () => {
+    setF({ ac: '', mandal: '', village: '', booth: '', section: '' });
+    showTab('overview');
+    const top = $('.tabs').getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top - 160), behavior: 'smooth' });
+  });
+
+  // ---------- tabs: the › arrow shows there are more pages to the right ----------
+  const tabsBar = $('.tabs');
+  const updateMore = () => {
+    // show the arrow only while the last page ("Find a voter") is not fully in view
+    const last = tabsBar.querySelector('.tab[data-tab="search"]');
+    const arrowW = tabsBar.classList.contains('has-more') ? $('#tabsMore').offsetWidth : 0;
+    const hidden = last.getBoundingClientRect().right > tabsBar.getBoundingClientRect().right - arrowW + 2;
+    tabsBar.classList.toggle('has-more', hidden);
+  };
+  tabsBar.addEventListener('scroll', updateMore, { passive: true });
+  window.addEventListener('resize', updateMore);
+  $('#tabsMore').addEventListener('click', () => tabsBar.scrollBy({ left: Math.max(120, tabsBar.clientWidth * 0.6), behavior: 'smooth' }));
 
   // ---------- tabs ----------
-  const TABS = ['overview', 'booths', 'streets', 'homes', 'search'];
+  const TABS = ['overview', 'insights', 'booths', 'streets', 'homes', 'search'];
   function showTab(id, fromHash) {
     tab = TABS.includes(id) ? id : 'overview';
     document.querySelectorAll('.panel').forEach((p) => { p.hidden = p.id !== tab; });
@@ -728,6 +831,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   function renderTab() {
     if (!booths.length) return;
     if (tab === 'overview') renderOverview();
+    else if (tab === 'insights') renderInsights();
     else if (tab === 'booths') renderBooths();
     else if (tab === 'streets') renderStreets();
     else if (tab === 'homes') renderHomes();
@@ -737,30 +841,19 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     const b = F.booth && booths.find((x) => x.id === F.booth);
     const sc = [F.ac || T('allConst'), F.mandal && T('mandalOf', F.mandal), F.village, b && T('part', b.part), F.section].filter(Boolean).join('  ›  ');
     $('#scope').textContent = sc;
+    document.querySelectorAll('.scope-copy').forEach((el) => { el.textContent = sc; });
     $('#fsum').textContent = sc;
   }
 
-  function renderOverview() {
+  // ---------- Insights page ----------
+  function renderInsights() {
     const bs = fBooths();
     const ss = fStreets();
-    const a = F.section ? sum(ss) : sum(bs);
-    const villages = new Set(bs.map((b) => b.ac + '|' + b.village)).size;
-    $('#h_total').textContent = fmt(a.voters);
-    $('#h_text').innerHTML = '';
-    const t = $('#h_text');
-    const part = (txt, bold) => { const el = document.createElement(bold ? 'b' : 'span'); el.textContent = txt; t.appendChild(el); };
-    T('hero', fmt(a.houses), fmt(bs.length), fmt(villages), fmt(a.men), fmt(a.women)).forEach(([txt, bold]) => part(txt, bold));
-
-    $('#s_ratio').textContent = a.men ? fmt(a.women / a.men * 1000) : '–';
-    $('#s_ratio_sub').textContent = T('womenShare', pct(a.women / a.voters));
-    $('#s_houses').textContent = fmt(a.houses);
-    $('#s_houses_sub').textContent = a.houses ? T('perHouse', (a.voters / a.houses).toFixed(1)) : '';
-    $('#s_young').textContent = fmt(a.young);
-    $('#s_young_sub').textContent = T('firstTime', fmt(a.first));
-    $('#s_old').textContent = fmt(a.seniors);
-    $('#s_old_sub').textContent = T('veryOld', fmt(a.old));
-
-    // focus
+    renderFocus(bs, ss);
+    renderCompare(bs);
+    renderRanks(bs, ss);
+  }
+  function renderFocus(bs, ss) {
     const items = [];
     const topBy = (rows, f) => rows.reduce((x, y) => (f(y) > f(x) ? y : x), rows[0]);
     if (ss.length) {
@@ -786,6 +879,101 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       const a3 = document.createElement('div'); a3.className = 'small muted'; a3.textContent = n;
       d.append(a1, a2, a3); box.appendChild(d);
     }
+  }
+  // compares constituencies, or the mandals of one constituency, or the villages of one mandal
+  function renderCompare(bs) {
+    const acs = new Set(bs.map((b) => b.ac)), mandals = new Set(bs.map((b) => b.mandal));
+    let level = 'ac', key = (b) => b.ac;
+    if (acs.size < 2) { level = 'mandal'; key = (b) => b.mandal; }
+    if (acs.size < 2 && mandals.size < 2) { level = 'village'; key = (b) => b.ac + '|' + b.village; }
+    const groups = new Map();
+    for (const b of bs) { const k = key(b); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(b); }
+    const box = $('#compareBox');
+    box.hidden = groups.size < 2;
+    if (box.hidden) return;
+    $('#cmpTitle').textContent = T(level === 'ac' ? 'cmpAc' : level === 'mandal' ? 'cmpMandal' : 'cmpVillage');
+    $('#cmpName').textContent = T(level === 'ac' ? 'thConst' : level === 'mandal' ? 'lblMandal' : 'thVillage');
+    const rows = [...groups.values()].map((g) => {
+      const a = sum(g), b0 = g[0];
+      return { b0, name: level === 'ac' ? b0.ac : level === 'mandal' ? b0.mandal : b0.village, booths: g.length, voters: a.voters,
+        ratio: a.men ? a.women / a.men * 1000 : 0, young: a.young / a.voters, senior: a.seniors / a.voters, perHouse: a.houses ? a.voters / a.houses : 0 };
+    }).sort((x, y) => y.voters - x.voters);
+    const tb = $('#t_compare tbody'); tb.replaceChildren();
+    const max = rows[0].voters || 1;
+    for (const r of rows) {
+      const tr = tb.insertRow(); tr.className = 'go'; tr.tabIndex = 0;
+      const go = () => {
+        if (level === 'ac') setF({ ac: r.b0.ac, mandal: '', village: '', booth: '', section: '' });
+        else if (level === 'mandal') setF({ ac: r.b0.ac, mandal: r.b0.mandal, village: '', booth: '', section: '' });
+        else setF({ ac: r.b0.ac, mandal: r.b0.mandal === '–' ? '' : r.b0.mandal, village: r.b0.village, booth: '', section: '' });
+      };
+      tr.addEventListener('click', go); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      td(tr, r.name, $('#cmpName').textContent, 'lead'); td(tr, fmt(r.booths), T('lblBooths'), 'r');
+      mini(td(tr, fmt(r.voters), T('lblVoters'), 'r'), r.voters / max);
+      td(tr, fmt(r.ratio), T('lblRatio'), 'r'); td(tr, pct(r.young), T('lbl1829'), 'r'); td(tr, pct(r.senior), T('lbl60'), 'r');
+      td(tr, r.perHouse.toFixed(1), T('thPerHouse'), 'r');
+    }
+  }
+  // top-5 lists of booths (and streets) for different measures
+  function renderRanks(bs, ss) {
+    const box = $('#ranks'); box.replaceChildren();
+    const real = bs.filter((b) => b.voters >= 50 && b.men);
+    $('#rankNote').hidden = real.length > 1;
+    $('#rankNote').textContent = T('rankNeedMore');
+    if (real.length < 2) return;
+    const top = (rows, f, asc) => rows.slice().sort((x, y) => (asc ? f(x) - f(y) : f(y) - f(x))).slice(0, 5);
+    const ratio = (b) => b.women / b.men * 1000, share = (k) => (b) => b[k] / b.voters, perHouse = (b) => (b.houses ? b.voters / b.houses : 0);
+    const lists = [
+      ['rkLargest', top(real, (b) => b.voters), (b) => T('nVoters', fmt(b.voters))],
+      ['rkSmallest', top(real, (b) => b.voters, true), (b) => T('nVoters', fmt(b.voters))],
+      ['rkFirst', top(real, (b) => b.first), (b) => T('nFirst', fmt(b.first))],
+      ['rkYoung', top(real, share('young')), (b) => T('pctYoung', pct(share('young')(b)))],
+      ['rkSenior', top(real, share('seniors')), (b) => T('pctSenior', pct(share('seniors')(b)))],
+      ['rkOld', top(real, (b) => b.old), (b) => T('nOld75', fmt(b.old))],
+      ['rkHighRatio', top(real, ratio), (b) => T('nRatio', fmt(ratio(b)))],
+      ['rkLowRatio', top(real, ratio, true), (b) => T('nRatio', fmt(ratio(b)))],
+      ['rkCrowded', top(real.filter((b) => b.houses), perHouse), (b) => T('perHouse', perHouse(b).toFixed(1))],
+    ];
+    const openBooth = (b) => { setF({ ac: b.ac, mandal: b.mandal === '–' ? '' : b.mandal, village: b.village, booth: b.id, section: '' }); showTab('overview'); };
+    const card = (titleKey, items, label, value, open) => {
+      const c = document.createElement('div'); c.className = 'rank';
+      const h = document.createElement('h3'); h.textContent = T(titleKey); c.appendChild(h);
+      const ol = document.createElement('ol');
+      items.forEach((x) => {
+        const li = document.createElement('li'); li.tabIndex = 0;
+        const n = document.createElement('span'); n.className = 'rn'; n.textContent = label(x);
+        const v = document.createElement('span'); v.className = 'rv'; v.textContent = value(x);
+        li.append(n, v); li.addEventListener('click', () => open(x)); li.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(x); });
+        ol.appendChild(li);
+      });
+      c.appendChild(ol); box.appendChild(c);
+    };
+    lists.forEach(([k, items, value]) => card(k, items, (b) => b.label, value, openBooth));
+    const sFirst = top(ss.filter((s) => s.first > 0), (s) => s.first);
+    if (sFirst.length) card('rkStreetFirst', sFirst, (s) => `${s.section}, ${s.boothLabel}`, (s) => T('nFirst', fmt(s.first)),
+      (s) => { setF({ ac: s.ac, mandal: s.mandal === '–' ? '' : s.mandal, village: s.village, booth: s.booth, section: s.section }); showTab('overview'); });
+  }
+
+  function renderOverview() {
+    const bs = fBooths();
+    const ss = fStreets();
+    const a = F.section ? sum(ss) : sum(bs);
+    const villages = new Set(bs.map((b) => b.ac + '|' + b.village)).size;
+    $('#h_total').textContent = fmt(a.voters);
+    $('#h_text').innerHTML = '';
+    const t = $('#h_text');
+    const part = (txt, bold) => { const el = document.createElement(bold === 1 ? 'b' : 'span'); if (bold === 2) el.className = 'hero-word'; el.textContent = txt; t.appendChild(el); };
+    T('hero', fmt(a.houses), fmt(bs.length), fmt(villages), fmt(a.men), fmt(a.women)).forEach(([txt, bold]) => part(txt, bold));
+
+    $('#s_ratio').textContent = a.men ? fmt(a.women / a.men * 1000) : '–';
+    $('#s_ratio_sub').textContent = T('womenShare', pct(a.women / a.voters));
+    $('#s_houses').textContent = fmt(a.houses);
+    $('#s_houses_sub').textContent = a.houses ? T('perHouse', (a.voters / a.houses).toFixed(1)) : '';
+    $('#s_young').textContent = fmt(a.young);
+    $('#s_young_sub').textContent = T('firstTime', fmt(a.first));
+    $('#s_old').textContent = fmt(a.seniors);
+    $('#s_old_sub').textContent = T('veryOld', fmt(a.old));
+
     drawPyramid(a.bands);
     drawStreets(ss.slice().sort((x, y) => y.voters - x.voters).slice(0, 10));
     drawVillages(bs);
@@ -1136,8 +1324,8 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     $('#loading').hidden = true; $('#app').hidden = false; $('#fileInfo').hidden = false;
     $('#fileSummary').textContent = summaryText();
     renderFilters(); renderScope();
-    if (window.matchMedia('(max-width: 640px)').matches) $('#fbox').open = false;
     showTab(location.hash.slice(1) || 'overview', true);
+    requestAnimationFrame(updateMore);
   }
 
   function relabel() {
