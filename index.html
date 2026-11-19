@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Google Analytics 4 - KoLogs -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MQ72B80JTH"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MQ72B80JTH');
+</script>
+
 <title>Voter Insights | KoLogs</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23ffffff%27/%3E%3Cpath d=%27M15 15 L32 50 L49 15%27 fill=%27none%27 stroke=%27%23028136%27 stroke-width=%2711%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
 <script src="config.js"></script>
@@ -730,11 +739,13 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     }
     return out.replace(/a+vu\b/g, 'ao');   // రావు is written Rao on the roll
   }
+  // Google Analytics events. Never sends what people type (names, EPIC or house numbers).
+  const track = (name, params) => { try { if (window.gtag) window.gtag('event', name, params || {}); } catch (e) { /* ignore */ } };
   const nameOf = (n) => (n === '(Name not readable)' ? T('nameUnreadable') : n);
-  async function rpc(fn, body) {
+  async function rpc(fn, body, signal) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
     if (SB_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SB_KEY;   // older "anon" keys
-    const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(body), signal });
     if (!res.ok) {
       const err = new Error('HTTP ' + res.status);
       err.asleep = res.status === 503 || res.status === 540 || res.status === 522;
@@ -822,10 +833,11 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     const n = $('#fsumN'); if (n) { n.textContent = active.length; n.classList.toggle('on', active.length > 0); }
   }
   const setF = (patch) => { Object.assign(F, patch); Object.keys(pageOf).forEach((k) => { pageOf[k] = 0; }); renderAll(); };
-  $('#f_ac').addEventListener('change', (e) => setF({ ac: pickVal(e.target.value), mandal: '', village: '', booth: '', section: '' }));
-  $('#f_mandal').addEventListener('change', (e) => setF({ mandal: pickVal(e.target.value), village: '', booth: '', section: '' }));
-  $('#f_village').addEventListener('change', (e) => setF({ village: pickVal(e.target.value), booth: '', section: '' }));
+  $('#f_ac').addEventListener('change', (e) => { track('select_filter', { level: 'ac', value: pickVal(e.target.value) || 'all' }); setF({ ac: pickVal(e.target.value), mandal: '', village: '', booth: '', section: '' }); });
+  $('#f_mandal').addEventListener('change', (e) => { track('select_filter', { level: 'mandal', value: pickVal(e.target.value) || 'all' }); setF({ mandal: pickVal(e.target.value), village: '', booth: '', section: '' }); });
+  $('#f_village').addEventListener('change', (e) => { track('select_filter', { level: 'village', value: pickVal(e.target.value) || 'all' }); setF({ village: pickVal(e.target.value), booth: '', section: '' }); });
   $('#findQuick').addEventListener('click', () => {
+    track('find_voter_button');
     showTab('search');
     const top = $('.tabs').getBoundingClientRect().top + window.scrollY;
     window.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
@@ -853,12 +865,15 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
 
   // ---------- tabs ----------
   const TABS = ['overview', 'insights', 'booths', 'streets', 'homes', 'search'];
+  let firstTab = true;
   function showTab(id, fromHash) {
     tab = TABS.includes(id) ? id : 'overview';
     document.querySelectorAll('.panel').forEach((p) => { p.hidden = p.id !== tab; });
     document.querySelectorAll('.tab').forEach((b) => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
     if (!fromHash && location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab);
     renderTab();
+    if (!firstTab) track('page_view', { page_title: 'Voter Insights - ' + tab, page_location: location.origin + location.pathname + '#' + tab });
+    firstTab = false;
   }
   document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
     showTab(b.dataset.tab);
@@ -1287,6 +1302,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
         detail = document.createElement('tr'); detail.className = 'mrow';
         const c = detail.insertCell(); c.colSpan = 5;
         tr.after(detail);
+        track('view_members', { voters_in_house: h.n });
         if (!h.members) {
           const p = document.createElement('p'); p.className = 'note'; p.textContent = T('loadingMembers'); c.appendChild(p);
           try {
@@ -1317,7 +1333,8 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     });
     return box;
   }
-  let searchState = { key: '', total: 0, rows: [] }, searchSeq = 0;
+  let searchState = { key: '', total: 0, rows: [] }, searchSeq = 0, searchCtl = null;
+  const searchCache = new Map();   // recent searches, so going back or re-picking a filter needs no new request
   async function renderSearch() {
     const tb = $('#t_search tbody');
     const pg = document.querySelector('.pager[data-pager="t_search"]');
@@ -1326,21 +1343,28 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       $('#searchNote').textContent = T('typeToSearch'); return;
     }
     const key = JSON.stringify([query, F.ac, F.mandal, F.village, F.booth, F.section]);
+    if (searchState.key !== key && searchCache.has(key)) { searchState = searchCache.get(key); pageOf.t_search = 0; }
     if (searchState.key !== key) {
       const seq = ++searchSeq;
+      if (searchCtl) searchCtl.abort();   // a newer search replaces the one still running
+      searchCtl = new AbortController();
       tb.replaceChildren(); pg.hidden = true;
       $('#searchNote').textContent = T('searching');
       const btn = $('#searchForm button'); btn.disabled = true;
       let d;
       try {
-        d = await rpc('search_voters', { q: toLatin(query), p_ac: F.ac, p_mandal: F.mandal, p_village: F.village, p_booth: F.booth, p_section: F.section });
+        d = await rpc('search_voters', { q: toLatin(query), p_ac: F.ac, p_mandal: F.mandal, p_village: F.village, p_booth: F.booth, p_section: F.section }, searchCtl.signal);
       } catch (e) {
+        if (e.name === 'AbortError') return;
         if (seq === searchSeq) { $('#searchNote').textContent = e.asleep ? T('asleep') : T('searchFail'); btn.disabled = false; }
         return;
       }
       btn.disabled = false;
       if (seq !== searchSeq) return;   // a newer search has started
       searchState = { key, total: d.total, rows: d.rows, mode: d.mode };
+      searchCache.set(key, searchState);
+      track('search', { search_type: d.mode || 'name', results: d.total > 1000 ? '1000+' : d.total > 100 ? '101-1000' : d.total > 20 ? '21-100' : d.total > 0 ? '1-20' : '0', telugu_typed: /[\u0C00-\u0C7F]/.test(query) ? 'yes' : 'no' });
+      if (searchCache.size > 60) searchCache.delete(searchCache.keys().next().value);
       pageOf.t_search = 0;
     }
     const { total, rows, mode } = searchState;
@@ -1348,7 +1372,10 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     note.classList.toggle('fuzzy', mode === 'fuzzy' && total > 0);
     if (!total) note.textContent = T('noMatch');
     else if (mode === 'fuzzy') note.textContent = T('fuzzyNote', fmt(Math.min(total, rows.length)));
-    else note.textContent = rows.length < total ? T('first200', fmt(rows.length), fmt(total)) : T('found', fmt(total));
+    else {
+      const totalTxt = total > 1000 ? fmt(1000) + '+' : fmt(total);   // counting stops at 1,000 to keep searches fast
+      note.textContent = rows.length < total ? T('first200', fmt(rows.length), totalTxt) : T('found', totalTxt);
+    }
     tb.replaceChildren();
     for (const v of paginate('t_search', rows, 'nounVoters')) {
       const b = boothById.get(v.booth);
@@ -1370,7 +1397,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   let qTimer;
   $('#q').addEventListener('input', () => {
     clearTimeout(qTimer);
-    qTimer = setTimeout(() => { query = $('#q').value.trim().toLowerCase(); pageOf.t_search = 0; renderSearch(); }, 350);
+    qTimer = setTimeout(() => { query = $('#q').value.trim().toLowerCase(); pageOf.t_search = 0; renderSearch(); }, 500);
   });
 
   // redraw charts when the width changes
@@ -1397,6 +1424,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     homesByBooth.forEach((list, k) => list.forEach((h) => { h.label = byId.get(k).label; }));
   }
   function setLang(l) {
+    if (l !== LANG) track('select_language', { language: l === 'te' ? 'telugu' : 'english' });
     LANG = l === 'te' ? 'te' : 'en';
     try { localStorage.setItem('vi-lang', LANG); } catch (e) { /* ignore */ }
     applyStatic();
