@@ -91,7 +91,7 @@ button, input, select { font: inherit; color: inherit; }
 .cols summary { cursor: pointer; }
 
 /* ---------- filters ---------- */
-.filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px 12px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; }
+.filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto; gap: 10px 12px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; }
 .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--slate); min-width: 0; }
 .filters select { box-sizing: border-box; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: var(--radius-sm); background-color: var(--paper); padding: 0 30px 0 10px; font-size: 15px; text-overflow: ellipsis; -webkit-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238A8E9B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -319,8 +319,6 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       <label><span data-t="fConst">Constituency</span><select id="f_ac"></select></label>
       <label><span data-t="fMandal">Mandal</span><select id="f_mandal"></select></label>
       <label><span data-t="fVillage">Village</span><select id="f_village"></select></label>
-      <label><span data-t="fBooth">Booth</span><select id="f_booth"></select></label>
-      <label><span data-t="fStreet">Street / section</span><select id="f_section"></select></label>
       <button class="find-quick" id="findQuick" type="button"><span data-t="tabSearch">Find a voter</span></button>
       <button class="clear" id="clearFilters" type="button" data-t="showAll">Show everything</button>
     </div>
@@ -813,22 +811,20 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     const b2 = b1.filter((b) => !F.mandal || b.mandal === F.mandal);
     F.village = fillSelect($('#f_village'), T('selVillage'), T('allVillages'), uniq(b2.map((b) => b.village)).map((x) => [x, x]), F.village);
     const b3 = b2.filter((b) => !F.village || b.village === F.village).sort((a, b) => a.ac.localeCompare(b.ac) || a.part - b.part);
-    F.booth = fillSelect($('#f_booth'), T('selBooth'), T('allBooths'), b3.map((b) => [b.id, b.label]), F.booth);
+    // booth and street have no dropdowns; they are set by tapping a booth or street, and kept only while still inside the area
+    if (F.booth && !b3.some((b) => b.id === F.booth)) F.booth = '';
     const secs = streets.filter((s) => inF(s, false));
-    F.section = fillSelect($('#f_section'), T('selStreet'), T('allStreets'), uniq(secs.map((s) => s.section)).map((x) => [x, x]), F.section);
-    $('#f_section').disabled = !F.booth && !F.village && secs.length > 400;
+    if (F.section && !secs.some((s2) => s2.section === F.section)) F.section = '';
     // highlight what is filtered, and the way back to everything
     const active = ['ac', 'mandal', 'village', 'booth', 'section'].filter((k) => F[k]);
     $('#clearFilters').classList.toggle('on', active.length > 0);
-    ['ac', 'mandal', 'village', 'booth', 'section'].forEach((k) => $('#f_' + k).classList.toggle('set', !!F[k]));
+    ['ac', 'mandal', 'village'].forEach((k) => $('#f_' + k).classList.toggle('set', !!F[k]));
     const n = $('#fsumN'); if (n) { n.textContent = active.length; n.classList.toggle('on', active.length > 0); }
   }
   const setF = (patch) => { Object.assign(F, patch); Object.keys(pageOf).forEach((k) => { pageOf[k] = 0; }); renderAll(); };
   $('#f_ac').addEventListener('change', (e) => setF({ ac: pickVal(e.target.value), mandal: '', village: '', booth: '', section: '' }));
   $('#f_mandal').addEventListener('change', (e) => setF({ mandal: pickVal(e.target.value), village: '', booth: '', section: '' }));
   $('#f_village').addEventListener('change', (e) => setF({ village: pickVal(e.target.value), booth: '', section: '' }));
-  $('#f_booth').addEventListener('change', (e) => setF({ booth: pickVal(e.target.value), section: '' }));
-  $('#f_section').addEventListener('change', (e) => setF({ section: pickVal(e.target.value) }));
   $('#findQuick').addEventListener('click', () => {
     showTab('search');
     const top = $('.tabs').getBoundingClientRect().top + window.scrollY;
