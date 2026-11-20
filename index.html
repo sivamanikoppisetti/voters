@@ -153,6 +153,28 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .box > p { margin: 2px 0 0; font-size: 14px; color: var(--slate); }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; margin-top: 14px; }
+.duo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.duo > .box { margin-top: 0; }
+@media (max-width: 960px) { .duo { grid-template-columns: 1fr; } #voterMix { order: -1; } }
+.mix-modes { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin: 10px 0 4px; background: var(--surface); }
+.mix-modes button { border: 0; background: transparent; font: inherit; font-size: 14px; padding: 7px 14px; cursor: pointer; color: var(--ink); min-height: 36px; }
+.mix-modes button[aria-pressed="true"] { background: var(--brand); color: #FFFFFF; font-weight: 600; }
+.mix-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.mix-chart { position: relative; flex: 0 0 auto; width: 240px; max-width: 100%; }
+.mix-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mix-chart path { cursor: pointer; transition: opacity .2s, transform .25s; outline: none; }
+.mix-chart path:focus-visible { stroke: var(--ink); stroke-width: 2px; }
+.mix-legend { list-style: none; margin: 0; padding: 0; flex: 1 1 170px; min-width: 0; display: grid; gap: 2px; }
+.mix-legend li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-size: 14px; line-height: 1.3; }
+.mix-legend li:hover, .mix-legend li.on { background: var(--brand-soft); }
+.mix-legend li.dim { opacity: .5; }
+.mix-legend i { flex: none; width: 12px; height: 12px; border-radius: 3px; }
+.mix-legend span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.mix-legend b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.mix-detail { margin-top: 12px; background: var(--brand-soft); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; line-height: 1.45; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.mix-detail:empty { display: none; }
+.mix-detail p { margin: 0; flex: 1 1 220px; }
+.mix-detail button { border: 0; border-radius: 999px; background: var(--brand); color: #FFFFFF; font: inherit; font-weight: 600; font-size: 14px; padding: 8px 16px; cursor: pointer; min-height: 38px; }
 .ranks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 14px; }
 .rank { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--paper); min-width: 0; }
 .rank h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
@@ -356,11 +378,24 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
         <div class="stat"><div class="stat-label" data-t="statYoung">Young voters, 18 to 29</div><div class="stat-num" id="s_young"></div><div class="stat-sub" id="s_young_sub"></div></div>
         <div class="stat"><div class="stat-label" data-t="statOld">Seniors, 60 and over</div><div class="stat-num" id="s_old"></div><div class="stat-sub" id="s_old_sub"></div></div>
       </div>
+      <div class="duo">
       <div class="box" id="topVillages">
         <div class="box-head"><h2 data-t="villTitle">Villages with the most voters</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
         <p data-t="villSub">Ranked by number of voters. Tap a village to see only that village.</p>
         <div class="chart" id="c_villages"></div>
         <p class="note" id="villagesNote"></p>
+      </div>
+      <div class="box" id="voterMix">
+        <div class="box-head"><h2 data-t="mixTitle">Who are the voters?</h2></div>
+        <p data-t="mixSub">Tap a slice to explore.</p>
+        <div class="mix-modes" role="group" aria-label="Pie chart view">
+          <button type="button" data-mode="age" aria-pressed="true" data-t="mixAge">Age</button>
+          <button type="button" data-mode="gender" aria-pressed="false" data-t="mixGender">Men / Women</button>
+          <button type="button" data-mode="village" aria-pressed="false" data-t="mixVillage">Villages</button>
+        </div>
+        <div class="mix-wrap"><div class="chart mix-chart" id="c_mix"></div><ul class="mix-legend" id="mixLegend"></ul></div>
+        <div class="mix-detail" id="mixDetail" aria-live="polite"></div>
+      </div>
       </div>
       <div class="box" id="topSurnames">
         <div class="box-head"><h2 data-t="snTitle">Surnames with the most voters</h2><div class="legend"><span><span class="sw" style="background:var(--men)"></span><span data-t="men">Men</span></span><span><span class="sw" style="background:var(--women)"></span><span data-t="women">Women</span></span></div></div>
@@ -554,7 +589,16 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       prev: 'Previous', next: 'Next',
       footer: 'Figures come from the 2026 SIR draft electoral rolls, read from scanned PDFs, so a few names may have small spelling errors. Households are distinct house numbers within a booth. Ages are as printed on the roll, as on 01-07-2026.',
       selConst: 'Select constituency', selMandal: 'Select mandal', selVillage: 'Select village', selBooth: 'Select booth', selStreet: 'Select street',
-      createdBy: 'Created by', tabInsights: 'Insights', nameUnreadable: '(Name not readable on the roll)',
+      createdBy: 'Created by', tabInsights: 'Insights',
+      mixTitle: 'Who are the voters?', mixSub: 'Tap a slice to explore.', mixAge: 'Age', mixGender: 'Men / Women', mixVillage: 'Villages',
+      mixVoters: 'voters', mixOther: 'Other', mixOtherVill: (n) => `${n} other villages`,
+      mixHint: 'Tap a slice, or a row beside the chart, to see what it means for this area.',
+      mixAgeTop: (l, n, p, booth, bn) => `${n} voters are aged ${l} (${p}). The most are in ${booth}: ${bn}.`,
+      mixAgeOnly: (l, n, p) => `${n} voters are aged ${l} (${p}).`,
+      mixGenderTxt: (l, n, p, r) => `${l}: ${n} voters (${p}). There are ${r} women for every 1,000 men here.`,
+      mixVillTxt: (l, n, p, b) => `${l}: ${n} voters (${p}) across ${b} booths.`,
+      mixRestTxt: (n, p) => `The remaining villages together have ${n} voters (${p}). Use the Village filter to open one.`,
+      mixOpenBooth: 'Open this booth', mixOpenVill: 'Open this village', nameUnreadable: '(Name not readable on the roll)',
       cmpAc: 'Constituencies compared', cmpMandal: 'Mandals compared', cmpVillage: 'Villages compared',
       cmpSub: 'Side by side. Tap a row to open it.', thPerHouse: 'Voters per house',
       rankTitle: 'Booth rankings', rankSub: 'The top 5 booths for each measure in the area you picked. Tap a booth to open it.',
@@ -637,7 +681,16 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
       prev: 'వెనుకకు', next: 'తరువాత',
       footer: 'గణాంకాలు 2026 ప్రత్యేక సమగ్ర సవరణ (SIR) ముసాయిదా ఓటర్ల జాబితాల నుండి తీసుకున్నవి. స్కాన్ చేసిన PDFల నుండి చదివినందున కొన్ని పేర్లలో చిన్న అక్షర తేడాలు ఉండవచ్చు. ఒక బూత్‌లోని వేర్వేరు ఇంటి నంబర్లను కుటుంబాలుగా లెక్కించాం. వయస్సులు 01-07-2026 నాటికి జాబితాలో ఉన్నట్లు.',
       selConst: 'నియోజకవర్గం ఎంచుకోండి', selMandal: 'మండలం ఎంచుకోండి', selVillage: 'గ్రామం ఎంచుకోండి', selBooth: 'బూత్ ఎంచుకోండి', selStreet: 'వీధి ఎంచుకోండి',
-      createdBy: 'రూపొందించినవారు', tabInsights: 'విశ్లేషణలు', nameUnreadable: '(జాబితాలో పేరు స్పష్టంగా లేదు)',
+      createdBy: 'రూపొందించినవారు', tabInsights: 'విశ్లేషణలు',
+      mixTitle: 'ఓటర్లు ఎవరు?', mixSub: 'వివరాల కోసం ఒక భాగాన్ని నొక్కండి.', mixAge: 'వయస్సు', mixGender: 'పురుషులు / మహిళలు', mixVillage: 'గ్రామాలు',
+      mixVoters: 'ఓటర్లు', mixOther: 'ఇతరులు', mixOtherVill: (n) => `${n} ఇతర గ్రామాలు`,
+      mixHint: 'ఈ ప్రాంతం గురించి తెలుసుకోవడానికి చార్ట్‌లో ఒక భాగాన్ని లేదా పక్కన ఉన్న వరుసను నొక్కండి.',
+      mixAgeTop: (l, n, p, booth, bn) => `${l} ఏళ్ల వయస్సు ఉన్న ఓటర్లు ${n} మంది (${p}). ఎక్కువగా ${booth}లో ఉన్నారు: ${bn} మంది.`,
+      mixAgeOnly: (l, n, p) => `${l} ఏళ్ల వయస్సు ఉన్న ఓటర్లు ${n} మంది (${p}).`,
+      mixGenderTxt: (l, n, p, r) => `${l}: ${n} మంది ఓటర్లు (${p}). ఇక్కడ ప్రతి 1,000 మంది పురుషులకు ${r} మంది మహిళలు ఉన్నారు.`,
+      mixVillTxt: (l, n, p, b) => `${l}: ${n} మంది ఓటర్లు (${p}), ${b} బూత్‌లలో.`,
+      mixRestTxt: (n, p) => `మిగిలిన గ్రామాల్లో కలిపి ${n} మంది ఓటర్లు (${p}). ఒక గ్రామం చూడటానికి గ్రామం ఫిల్టర్ వాడండి.`,
+      mixOpenBooth: 'ఈ బూత్ చూడండి', mixOpenVill: 'ఈ గ్రామం చూడండి', nameUnreadable: '(జాబితాలో పేరు స్పష్టంగా లేదు)',
       cmpAc: 'నియోజకవర్గాల పోలిక', cmpMandal: 'మండలాల పోలిక', cmpVillage: 'గ్రామాల పోలిక',
       cmpSub: 'పక్కపక్కనే పోలిక. ఒక వరుసను నొక్కితే అది తెరుచుకుంటుంది.', thPerHouse: 'ఒక్కో ఇంటికి ఓటర్లు',
       rankTitle: 'బూత్‌ల ర్యాంకులు', rankSub: 'మీరు ఎంచుకున్న ప్రాంతంలో ప్రతి అంశంలో మొదటి 5 బూత్‌లు. బూత్‌ను నొక్కితే అది తెరుచుకుంటుంది.',
@@ -697,6 +750,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
   }
 
   const pct = (x) => (x == null || !isFinite(x) ? '–' : Math.round(x * 100) + '%');
+  const pctAll = pct;
   const BANDS = [['18–19', 18, 19], ['20–29', 20, 29], ['30–39', 30, 39], ['40–49', 40, 49], ['50–59', 50, 59], ['60–69', 60, 69], ['70–79', 70, 79], ['80+', 80, 200]];
   const bandOf = (a) => (a < 20 ? 0 : a >= 80 ? 7 : Math.floor(a / 10) - 1);
 
@@ -1035,6 +1089,7 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     drawPyramid(a.bands);
     drawStreets(ss.slice().sort((x, y) => y.voters - x.voters).slice(0, 10));
     drawVillages(bs);
+    drawMix(bs, a);
     drawSurnames(bs);
   }
 
@@ -1182,6 +1237,103 @@ footer { margin-top: 34px; font-size: 13px; color: var(--slate); max-width: 72ch
     g.append('text').attr('x', (v) => x(v.voters) + 6).attr('y', 34).style('font-variant-numeric', 'tabular-nums')
       .text((v) => `${fmt(v.voters)}  (${pct(v.voters / total)})`);
   }
+
+  // ---------- "Who are the voters?" donut ----------
+  let mixMode = 'age', mixSel = -1;
+  const AGE_GROUPS = [['18–19', [0]], ['20–29', [1]], ['30–39', [2]], ['40–49', [3]], ['50–59', [4]], ['60+', [5, 6, 7]]];
+  const AGE_COLORS = ['#D9962B', '#7FCB98', '#3FAE6E', '#028136', '#0B5E36', '#1F4E79'];   // first-time voters (18–19) in amber so the smallest group stands out
+  const VILL_COLORS = ['#028136', '#1F4E79', '#E0606E', '#D9962B', '#7A5CA8', '#2A9D9C', '#B8B0A2'];
+  function mixData(bs, a) {
+    if (mixMode === 'gender') {
+      const d = [{ key: 'm', label: T('men'), value: a.men, color: 'var(--men)' }, { key: 'f', label: T('women'), value: a.women, color: 'var(--women)' }];
+      if (a.other) d.push({ key: 'o', label: T('mixOther'), value: a.other, color: '#B8B0A2' });
+      return d;
+    }
+    if (mixMode === 'village') {
+      const map = new Map();
+      for (const b of bs) { const k = b.ac + '|' + b.village; if (!map.has(k)) map.set(k, { ac: b.ac, village: b.village, mandal: b.mandal, value: 0, booths: 0 }); const v = map.get(k); v.value += b.voters; v.booths++; }
+      const all = [...map.values()].sort((x, y) => y.value - x.value);
+      const top = all.slice(0, 6).map((v, i) => ({ key: 'v' + i, label: v.village, value: v.value, color: VILL_COLORS[i], v }));
+      const rest = all.slice(6);
+      if (rest.length) top.push({ key: 'rest', label: T('mixOtherVill', fmt(rest.length)), value: d3.sum(rest, (v) => v.value), color: VILL_COLORS[6] });
+      return top;
+    }
+    return AGE_GROUPS.map(([label, idx], i) => ({ key: 'a' + i, label, idx, value: d3.sum(idx, (k) => a.bands[k * 2] + a.bands[k * 2 + 1]), color: AGE_COLORS[i] }));
+  }
+  function drawMix(bs, a) {
+    const pct = (x) => (x > 0 && x < 0.01 ? '<1%' : pctAll(x));   // small groups read "<1%", not "0%"
+    const el = $('#c_mix'); el.querySelector('svg')?.remove();
+    const data = mixData(bs, a);
+    const total = d3.sum(data, (d) => d.value) || 1;
+    if (mixSel >= data.length) mixSel = -1;
+    const S = 240, R0 = S / 2 - 8, R1 = R0 * 0.6;
+    const arc = d3.arc().innerRadius(R1).outerRadius(R0).cornerRadius(3).padAngle(0.012);
+    const pie = d3.pie().sort(null).value((d) => d.value)(data);
+    const svg = d3.select(el).insert('svg', ':first-child').attr('viewBox', `${-S / 2} ${-S / 2} ${S} ${S}`).attr('role', 'img')
+      .attr('aria-label', T('mixTitle'));
+    const tip = tipFor(el);
+    const pick = (i) => {
+      mixSel = mixSel === i ? -1 : i;
+      if (mixSel >= 0) track('pie_select', { chart: mixMode, slice: data[mixSel].label });
+      drawMix(bs, a);
+    };
+    svg.selectAll('path').data(pie).join('path')
+      .attr('d', arc).style('fill', (p) => p.data.color)
+      .style('opacity', (p, i) => (mixSel < 0 || mixSel === i ? 1 : 0.4))
+      .style('stroke', (p, i) => (i === mixSel ? 'var(--ink)' : 'none')).style('stroke-width', 1.5)
+      .attr('transform', (p, i) => { if (i !== mixSel) return null; const [x, y] = arc.centroid(p); const k = 0.1; return `translate(${x * k},${y * k})`; })
+      .attr('tabindex', 0).attr('role', 'button')
+      .attr('aria-label', (p) => `${p.data.label}: ${fmt(p.data.value)} (${pct(p.data.value / total)})`)
+      .on('mousemove', (e, p) => tip.show(e, `${p.data.label}: ${fmt(p.data.value)} (${pct(p.data.value / total)})`))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (e, p) => { tip.hide(); pick(pie.indexOf(p)); })
+      .on('keydown', (e, p) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(pie.indexOf(p)); } });
+    // the centre: the total, or the picked slice
+    const sel = mixSel >= 0 ? data[mixSel] : null;
+    const c = svg.append('g').style('pointer-events', 'none').attr('text-anchor', 'middle');
+    c.append('text').attr('y', -4).style('font-size', '26px').style('font-weight', 700).style('fill', sel ? 'var(--ink)' : 'var(--brand)')
+      .style('font-variant-numeric', 'tabular-nums').text(fmt(sel ? sel.value : total));
+    c.append('text').attr('y', 20).style('font-size', '13px').style('fill', 'var(--slate)')
+      .text(sel ? `${sel.label} · ${pct(sel.value / total)}` : T('mixVoters'));
+    // the legend doubles as buttons (easier on phones)
+    const ul = $('#mixLegend'); ul.replaceChildren();
+    data.forEach((d, i) => {
+      const li = document.createElement('li'); li.tabIndex = 0; li.setAttribute('role', 'button');
+      li.className = mixSel === i ? 'on' : mixSel >= 0 ? 'dim' : '';
+      const sw = document.createElement('i'); sw.style.background = d.color;
+      const nm = document.createElement('span'); nm.textContent = d.label;
+      const v = document.createElement('b'); v.textContent = pct(d.value / total);
+      li.append(sw, nm, v);
+      li.addEventListener('click', () => pick(i));
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } });
+      ul.appendChild(li);
+    });
+    // what the picked slice means, and where to go next
+    const box = $('#mixDetail'); box.replaceChildren();
+    const say = (text, btnText, go) => {
+      const p = document.createElement('p'); p.textContent = text; box.appendChild(p);
+      if (btnText) { const b = document.createElement('button'); b.type = 'button'; b.textContent = btnText; b.addEventListener('click', go); box.appendChild(b); }
+    };
+    if (!sel) { say(T('mixHint')); return; }
+    if (mixMode === 'age') {
+      const val = (b) => d3.sum(sel.idx, (k) => b.bands[k * 2] + b.bands[k * 2 + 1]);
+      const top = bs.length > 1 ? bs.reduce((x, y) => (val(y) > val(x) ? y : x), bs[0]) : null;
+      if (top && !F.booth) say(T('mixAgeTop', sel.label, fmt(sel.value), pct(sel.value / total), top.label, fmt(val(top))), T('mixOpenBooth'),
+        () => { setF({ ac: top.ac, mandal: top.mandal === '–' ? '' : top.mandal, village: top.village, booth: top.id, section: '' }); });
+      else say(T('mixAgeOnly', sel.label, fmt(sel.value), pct(sel.value / total)));
+    } else if (mixMode === 'gender') {
+      say(T('mixGenderTxt', sel.label, fmt(sel.value), pct(sel.value / total), a.men ? fmt(a.women / a.men * 1000) : '–'));
+    } else if (sel.v) {
+      say(T('mixVillTxt', sel.label, fmt(sel.value), pct(sel.value / total), fmt(sel.v.booths)), T('mixOpenVill'),
+        () => { setF({ ac: sel.v.ac, mandal: '', village: sel.v.village, booth: '', section: '' }); });
+    } else say(T('mixRestTxt', fmt(sel.value), pct(sel.value / total)));
+  }
+  document.querySelectorAll('.mix-modes button').forEach((b) => b.addEventListener('click', () => {
+    mixMode = b.dataset.mode; mixSel = -1;
+    document.querySelectorAll('.mix-modes button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    track('pie_view', { chart: mixMode });
+    const bs = fBooths(); drawMix(bs, F.section ? sum(fStreets()) : sum(bs));
+  }));
 
   // ---------- tables ----------
   function sortRows(id, rows) {
