@@ -155,7 +155,13 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; margin-top: 14px; }
 .duo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .duo > .box { margin-top: 0; }
-@media (max-width: 960px) { .duo { grid-template-columns: 1fr; } #voterMix { order: -1; } }
+@media (max-width: 960px) {
+  /* phones and small tablets: the homes chart moves to the end of the Overview page */
+  #overview:not([hidden]) { display: flex; flex-direction: column; }
+  #overview > * { min-width: 0; }
+  .duo { display: contents; }
+  #voterMix { order: 99; }
+}
 .mix-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
 .mix-chart { position: relative; flex: 0 0 auto; width: 240px; max-width: 100%; }
 .mix-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
