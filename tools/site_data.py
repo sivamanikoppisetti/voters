@@ -197,6 +197,28 @@ def build_summary(df: pd.DataFrame) -> dict:
 
 
 
+# ---------------------------------------------------------------- households by type (new chart)
+HH_KEYS = ["alone", "two", "family", "large", "seniors", "mixed"]
+
+
+def household_stats(df: pd.DataFrame):
+    """Per booth and per street: homes with 1, 2, 3-5 and 6+ voters, seniors-only homes (everyone 60+),
+    and homes where voters aged 18-29 and 60+ live together. A home is a house number within a booth."""
+    d = df[df["house"] != ""][["booth", "section", "house", "age"]].copy()
+    d["y"] = d["age"].between(18, 29)
+    d["o"] = d["age"] >= 60
+
+    def agg(keys):
+        g = d.groupby(keys + ["house"]).agg(n=("age", "size"), y=("y", "sum"), o=("o", "sum")).reset_index()
+        g["alone"], g["two"] = g["n"] == 1, g["n"] == 2
+        g["family"], g["large"] = g["n"].between(3, 5), g["n"] >= 6
+        g["seniors"], g["mixed"] = g["o"] == g["n"], (g["y"] > 0) & (g["o"] > 0)
+        out = g.groupby(keys)[HH_KEYS].sum()
+        return {(k if isinstance(k, tuple) else (k,)): [int(x) for x in row] for k, row in zip(out.index, out.values)}
+
+    return agg(["booth"]), agg(["booth", "section"])
+
+
 # ---------------------------------------------------------------- compact format for the website
 def compact(df: pd.DataFrame) -> dict:
     """data.json in the compact format index.html expects (names listed once, rows refer by number)."""
@@ -210,10 +232,15 @@ def compact(df: pd.DataFrame) -> dict:
     keys = sorted(display)
     ki = {k: i for i, k in enumerate(keys)}
     counts = ["voters", "men", "women", "other", "young", "first", "seniors", "old"]
+    hb, hs = household_stats(df)
+    zero = [0] * len(HH_KEYS)
+    for b in booths:
+        b["hh"] = hb.get((b["id"],), zero)
     return {
         "v": 2, "total": s["total"], "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "booths": booths, "sections": sections,
-        "streets": [[bi[x["booth"]], si[x["section"]]] + [x[c] for c in counts] + [x["houses"]] + x["bands"] for x in s["streets"]],
+        "streets": [[bi[x["booth"]], si[x["section"]]] + [x[c] for c in counts] + [x["houses"]] + x["bands"] + hs.get((x["booth"], x["section"]), zero)
+                    for x in s["streets"]],
         "homes": [[bi[h["booth"]], h["house"], h["n"], h["sections"]] for h in s["homes"]],
         "surnames": [[bi[r[0]], si[r[1]], ki[r[2]]] + r[3:] for r in s["surnames"]],
         "snNames": [display[k] for k in keys],
